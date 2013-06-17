@@ -1,0 +1,51 @@
+<configuration>
+    <property>
+        <name>com.knewton.mapreduce.environment</name>
+        <value>${mapreduce.environment}</value>
+        <description>
+            Set by maven when given a P option. This is helpful
+            because of the differences in running MapReduce jobs in EMR,
+            a Regular Hadoop cluster, or locally. Valid values are EMR,
+            local, HadoopMapReduce. An enum holding these values is also
+            present in com.knewton.mapreduce.util.MREnvironment
+        </description>
+    </property>
+    <property>
+        <name>com.knewton.cassandra.backup.compression</name>
+        <value>false</value>
+        <description>
+            Set to true if sstables are compressed by the
+            backup process (Priam etc) with snappy compression. This is
+            outside of the cassandra compression of the data tables. You
+            do not need to set this property to true if your Cassandra
+            configuration is using compression. The library will auto
+            detect it.
+        </description>
+    </property>
+    <property>
+        <name>com.knewton.cassandra.backup.compress.buffersize</name>
+        <value>10240</value>
+        <description>
+            The size of the decompression buffer in KBs.
+        </description>
+    </property>
+    <property>
+        <name>mapred.task.timeout</name>
+        <value>1800000</value>
+        <description>
+            Increases the timeout time from the default value
+            of 10 mins to 30 mins. This is because during sstable
+            decompression and copy of the sstables to local disk the
+            mapper is not reporting any progress and the job tracker
+            thinks the task is stuck or dead.
+        </description>
+    </property>
+    <property>
+        <name>com.knewton.mapred.textoutputformat.separator</name>
+        <value>,</value>
+        <description>
+            Delimiter to be used when outputting records from the reducer.
+        </description>
+    </property>
+
+</configuration>

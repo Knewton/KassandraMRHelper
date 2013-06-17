@@ -1,0 +1,87 @@
+package com.knewton.mapreduce.util;
+
+import static org.junit.Assert.*;
+
+import org.apache.cassandra.config.CFMetaData;
+import org.apache.cassandra.config.ConfigurationException;
+import org.apache.cassandra.db.*;
+import org.apache.cassandra.db.marshal.LongType;
+import org.apache.cassandra.db.marshal.TypeParser;
+import org.apache.cassandra.io.IColumnSerializer;
+import org.apache.cassandra.io.sstable.SSTableIdentityIterator;
+import org.junit.Test;
+
+import java.io.ByteArrayInputStream;
+import java.io.DataInput;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+
+public class CassandraColumnUtilsTest {
+
+    /**
+     * Test if an <code>IColumn</code> is a super column.
+     * 
+     * @throws ConfigurationException
+     */
+    @Test
+    public void testCheckForSuperColumn() throws ConfigurationException {
+        SuperColumn sc = new SuperColumn(getDummyByteBuffer("name"), null);
+        assertTrue(CassandraColumnUtils.isSuperColumn(sc));
+        assertFalse(CassandraColumnUtils.isSuperColumn(
+                new Column(getDummyByteBuffer("name"),
+                        getDummyByteBuffer("value"))));
+        assertFalse(CassandraColumnUtils.isSuperColumn(
+                new CounterColumn(getDummyByteBuffer("name"),
+                        getDummyByteBuffer("value"), 0)));
+        assertFalse(CassandraColumnUtils.isSuperColumn(
+                new CounterUpdateColumn(getDummyByteBuffer("name"),
+                        getDummyByteBuffer("value"), 0)));
+        assertFalse(CassandraColumnUtils.isSuperColumn(
+                new DeletedColumn(getDummyByteBuffer("name"),
+                        getDummyByteBuffer("value"), 0)));
+        assertFalse(CassandraColumnUtils.isSuperColumn(
+                new ExpiringColumn(getDummyByteBuffer("name"),
+                        getDummyByteBuffer("value"), 0, 100)));
+    }
+
+    /**
+     * Test if sstable has super columns with SSTableIdentityIterator
+     * 
+     * @throws ConfigurationException
+     * @throws IOException
+     */
+    @Test
+    public void testCheckForSuperColumnWithIterator() throws
+            ConfigurationException, IOException {
+
+        DataInput in = new DataInputStream(
+                new ByteArrayInputStream(new byte[32]));
+        CFMetaData metadata = new CFMetaData(
+                "keyspace",
+                "columnFamily",
+                ColumnFamilyType.Standard,
+                TypeParser.parse(LongType.class.getName()),
+                null);
+        SSTableIdentityIterator iter = new SSTableIdentityIterator(
+                metadata, in, null, 0, 1, IColumnSerializer.Flag.LOCAL);
+        assertFalse(CassandraColumnUtils.isSuperColumn(iter));
+
+        in = new DataInputStream(
+                new ByteArrayInputStream(new byte[32]));
+        metadata = new CFMetaData(
+                "keyspace",
+                "columnFamily",
+                ColumnFamilyType.Super,
+                TypeParser.parse(LongType.class.getName()),
+                null);
+        iter = new SSTableIdentityIterator(
+                metadata, in, null, 0, 1, IColumnSerializer.Flag.LOCAL);
+        assertTrue(CassandraColumnUtils.isSuperColumn(iter));
+    }
+
+    private ByteBuffer getDummyByteBuffer(String value) {
+        return ByteBuffer.wrap(value.getBytes());
+    }
+
+}
