@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2013 Knewton
+ * 
+ * Dual licensed under: MIT: http://www.opensource.org/licenses/mit-license.php GPLv3:
+ * http://www.opensource.org/licenses/gpl-3.0.html.
+ * 
+ */
 package com.knewton.mapreduce.io;
 
 import com.knewton.mapreduce.SSTableRecordReader;
@@ -18,11 +25,6 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Copyright (c) 2013 Knewton
- * 
- * Dual licensed under: MIT: http://www.opensource.org/licenses/mit-license.php GPLv3:
- * http://www.opensource.org/licenses/gpl-3.0.html.
- * 
  * Input format for reading cassandra SSTables. When given an input directory, it expands all
  * subdirectories and identifies SSTable data files that can be used as input.
  * 

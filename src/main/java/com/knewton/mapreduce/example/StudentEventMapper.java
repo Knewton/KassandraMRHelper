@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2013 Knewton
+ * 
+ * Dual licensed under: MIT: http://www.opensource.org/licenses/mit-license.php GPLv3:
+ * http://www.opensource.org/licenses/gpl-3.0.html.
+ * 
+ */
 package com.knewton.mapreduce.example;
 
 import com.knewton.thrift.StudentEvent;
@@ -8,13 +15,6 @@ import org.apache.hadoop.io.LongWritable;
 
 import java.io.IOException;
 
-/**
- * Copyright (c) 2013 Knewton
- * 
- * Dual licensed under: MIT: http://www.opensource.org/licenses/mit-license.php GPLv3:
- * http://www.opensource.org/licenses/gpl-3.0.html.
- * 
- */
 public class StudentEventMapper extends StudentEventAbstractMapper<LongWritable,
         StudentEventWritable> {
 

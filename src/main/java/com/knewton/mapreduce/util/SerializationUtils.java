@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2013 Knewton
+ * 
+ * Dual licensed under: MIT: http://www.opensource.org/licenses/mit-license.php GPLv3:
+ * http://www.opensource.org/licenses/gpl-3.0.html.
+ * 
+ */
 package com.knewton.mapreduce.util;
 
 import org.apache.hadoop.conf.Configuration;
@@ -7,14 +14,6 @@ import org.apache.thrift.protocol.TProtocolFactory;
 
 import java.lang.reflect.InvocationTargetException;
 
-/**
- * Copyright (c) 2013 Knewton
- * 
- * Dual licensed under: MIT: http://www.opensource.org/licenses/mit-license.php GPLv3:
- * http://www.opensource.org/licenses/gpl-3.0.html.
- * 
- * 
- */
 public class SerializationUtils {
 
     public static final String SERIALIZATION_FACTORY_PARAMETER =

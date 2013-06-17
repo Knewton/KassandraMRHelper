@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2013 Knewton
+ * 
+ * Dual licensed under: MIT: http://www.opensource.org/licenses/mit-license.php GPLv3:
+ * http://www.opensource.org/licenses/gpl-3.0.html.
+ * 
+ */
 package com.knewton.mapreduce.example;
 
 import com.knewton.mapreduce.io.SSTableColumnInputFormat;
@@ -22,11 +29,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 
 /**
- * Copyright (c) 2013 Knewton
- * 
- * Dual licensed under: MIT: http://www.opensource.org/licenses/mit-license.php GPLv3:
- * http://www.opensource.org/licenses/gpl-3.0.html.
- * 
  * Example job for reading data from SSTables. This example uses the StudentEvents column family
  * that stores serialized StudentEvent objects defined in a thrift specification under the thrift
  * source directory. Sample SSTables can be generated with {@link WriteSampleSSTable}.

@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2013 Knewton
+ * 
+ * Dual licensed under: MIT: http://www.opensource.org/licenses/mit-license.php GPLv3:
+ * http://www.opensource.org/licenses/gpl-3.0.html.
+ * 
+ */
 package com.knewton.mapreduce;
 
 import com.google.common.collect.Sets;
@@ -31,11 +38,6 @@ import java.util.Set;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
- * Copyright (c) 2013 Knewton
- * 
- * Dual licensed under: MIT: http://www.opensource.org/licenses/mit-license.php GPLv3:
- * http://www.opensource.org/licenses/gpl-3.0.html.
- * 
  * Abstract record reader class that handles keys and values from an sstable. It's subclassed by a
  * row record reader ({@link SSTableRowRecordReader}), passing an entire row as a key/value pair and
  * a column record reader ({@link SSTableColumnRecordReader}) passing individual columns as values.

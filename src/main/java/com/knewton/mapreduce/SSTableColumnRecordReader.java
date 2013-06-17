@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2013 Knewton
+ * 
+ * Dual licensed under: MIT: http://www.opensource.org/licenses/mit-license.php GPLv3:
+ * http://www.opensource.org/licenses/gpl-3.0.html.
+ * 
+ */
 package com.knewton.mapreduce;
 
 import org.apache.cassandra.db.IColumn;
@@ -7,11 +14,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
- * Copyright (c) 2013 Knewton
- * 
- * Dual licensed under: MIT: http://www.opensource.org/licenses/mit-license.php GPLv3:
- * http://www.opensource.org/licenses/gpl-3.0.html.
- * 
  * Record reader for sstables that calls map with the key being the sstable row key and the value a
  * single column.
  * 

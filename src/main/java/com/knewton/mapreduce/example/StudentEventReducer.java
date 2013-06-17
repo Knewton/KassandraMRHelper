@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2013 Knewton
+ * 
+ * Dual licensed under: MIT: http://www.opensource.org/licenses/mit-license.php GPLv3:
+ * http://www.opensource.org/licenses/gpl-3.0.html.
+ * 
+ */
 package com.knewton.mapreduce.example;
 
 import com.knewton.thrift.StudentEvent;
@@ -15,13 +22,6 @@ import java.io.*;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Copyright (c) 2013 Knewton
- * 
- * Dual licensed under: MIT: http://www.opensource.org/licenses/mit-license.php GPLv3:
- * http://www.opensource.org/licenses/gpl-3.0.html.
- * 
- */
 public class StudentEventReducer extends Reducer<LongWritable,
         StudentEventWritable, LongWritable, Text> {
 

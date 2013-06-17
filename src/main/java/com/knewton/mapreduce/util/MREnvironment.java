@@ -1,5 +1,3 @@
-package com.knewton.mapreduce.util;
-
 /**
  * Copyright (c) 2013 Knewton
  * 
@@ -7,6 +5,8 @@ package com.knewton.mapreduce.util;
  * http://www.opensource.org/licenses/gpl-3.0.html.
  * 
  */
+package com.knewton.mapreduce.util;
+
 public enum MREnvironment {
     LOCAL("local"),
     HADOOP_MAPREDUCE("HadoopMapReduce"),

@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2013 Knewton
+ * 
+ * Dual licensed under: MIT: http://www.opensource.org/licenses/mit-license.php GPLv3:
+ * http://www.opensource.org/licenses/gpl-3.0.html.
+ * 
+ */
 package com.knewton.mapreduce.io;
 
 import com.knewton.thrift.StudentEvent;
@@ -14,11 +21,6 @@ import java.io.IOException;
 import java.util.Comparator;
 
 /**
- * Copyright (c) 2013 Knewton
- * 
- * Dual licensed under: MIT: http://www.opensource.org/licenses/mit-license.php GPLv3:
- * http://www.opensource.org/licenses/gpl-3.0.html.
- * 
  * Wrapper class for StudentEvents that is Hadoop writable so that it can be used in the reducer.
  * 
  */

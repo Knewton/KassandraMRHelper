@@ -1,9 +1,3 @@
-package com.knewton.mapreduce.util;
-
-import org.apache.cassandra.db.IColumn;
-import org.apache.cassandra.db.SuperColumn;
-import org.apache.cassandra.io.sstable.SSTableIdentityIterator;
-
 /**
  * Copyright (c) 2013 Knewton
  * 
@@ -11,6 +5,12 @@ import org.apache.cassandra.io.sstable.SSTableIdentityIterator;
  * http://www.opensource.org/licenses/gpl-3.0.html.
  * 
  */
+package com.knewton.mapreduce.util;
+
+import org.apache.cassandra.db.IColumn;
+import org.apache.cassandra.db.SuperColumn;
+import org.apache.cassandra.io.sstable.SSTableIdentityIterator;
+
 public class CassandraColumnUtils {
 
     /**

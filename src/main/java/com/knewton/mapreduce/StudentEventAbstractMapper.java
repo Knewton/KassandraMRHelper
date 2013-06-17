@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2013 Knewton
+ * 
+ * Dual licensed under: MIT: http://www.opensource.org/licenses/mit-license.php GPLv3:
+ * http://www.opensource.org/licenses/gpl-3.0.html.
+ * 
+ */
 package com.knewton.mapreduce;
 
 import com.knewton.thrift.StudentEvent;
@@ -26,11 +33,6 @@ import java.nio.ByteBuffer;
 import javax.annotation.Nullable;
 
 /**
- * Copyright (c) 2013 Knewton
- * 
- * Dual licensed under: MIT: http://www.opensource.org/licenses/mit-license.php GPLv3:
- * http://www.opensource.org/licenses/gpl-3.0.html.
- * 
  * Abstract mapper that converts a cassandra column to a student event and a cassandra row key to a
  * student id.
  * 
