@@ -17,10 +17,11 @@ package com.knewton.mapreduce.util;
 import static org.junit.Assert.*;
 
 import org.apache.cassandra.config.CFMetaData;
-import org.apache.cassandra.config.ConfigurationException;
 import org.apache.cassandra.db.*;
 import org.apache.cassandra.db.marshal.LongType;
 import org.apache.cassandra.db.marshal.TypeParser;
+import org.apache.cassandra.exceptions.ConfigurationException;
+import org.apache.cassandra.exceptions.SyntaxException;
 import org.apache.cassandra.io.IColumnSerializer;
 import org.apache.cassandra.io.sstable.SSTableIdentityIterator;
 import org.junit.Test;
@@ -64,10 +65,11 @@ public class CassandraColumnUtilsTest {
      * 
      * @throws ConfigurationException
      * @throws IOException
+     * @throws SyntaxException
      */
     @Test
     public void testCheckForSuperColumnWithIterator() throws
-            ConfigurationException, IOException {
+            ConfigurationException, IOException, SyntaxException {
 
         DataInput in = new DataInputStream(
                 new ByteArrayInputStream(new byte[32]));
@@ -78,7 +80,7 @@ public class CassandraColumnUtilsTest {
                 TypeParser.parse(LongType.class.getName()),
                 null);
         SSTableIdentityIterator iter = new SSTableIdentityIterator(
-                metadata, in, null, 0, 1, IColumnSerializer.Flag.LOCAL);
+                metadata, in, "filename", null, 0, 1, IColumnSerializer.Flag.LOCAL);
         assertFalse(CassandraColumnUtils.isSuperColumn(iter));
 
         in = new DataInputStream(
@@ -90,7 +92,7 @@ public class CassandraColumnUtilsTest {
                 TypeParser.parse(LongType.class.getName()),
                 null);
         iter = new SSTableIdentityIterator(
-                metadata, in, null, 0, 1, IColumnSerializer.Flag.LOCAL);
+                metadata, in, "filename", null, 0, 1, IColumnSerializer.Flag.LOCAL);
         assertTrue(CassandraColumnUtils.isSuperColumn(iter));
     }
 

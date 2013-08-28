@@ -14,14 +14,18 @@
  */
 package com.knewton.mapreduce;
 
+import com.knewton.mapreduce.io.SSTableInputFormat;
+import com.knewton.mapreduce.io.sstable.BackwardsCompatibleDescriptor;
+
 import com.google.common.collect.Sets;
 
 import org.apache.cassandra.config.CFMetaData;
-import org.apache.cassandra.config.ConfigurationException;
 import org.apache.cassandra.db.ColumnFamilyType;
 import org.apache.cassandra.db.marshal.AbstractType;
 import org.apache.cassandra.db.marshal.TypeParser;
 import org.apache.cassandra.dht.IPartitioner;
+import org.apache.cassandra.exceptions.ConfigurationException;
+import org.apache.cassandra.exceptions.SyntaxException;
 import org.apache.cassandra.io.sstable.Component;
 import org.apache.cassandra.io.sstable.Descriptor;
 import org.apache.cassandra.io.sstable.SSTable;
@@ -48,7 +52,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * Abstract record reader class that handles keys and values from an sstable. It's subclassed by a
  * row record reader ({@link SSTableRowRecordReader}), passing an entire row as a key/value pair and
  * a column record reader ({@link SSTableColumnRecordReader}) passing individual columns as values.
- * Used in conjunction with {@linkSSTableInputFormat}
+ * Used in conjunction with {@link SSTableInputFormat}
  * 
  * @param <K>
  * @param <V>
@@ -75,10 +79,10 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
     protected SSTableScanner tableScanner;
     protected K currentKey;
     protected V currentValue;
-    private SSTableReader tableReader;
     private long keysRead;
     private Set<Component> components;
     private Descriptor desc;
+    private long estimatedKeys;
 
     private static final int REPORT_DECOMPRESS_PROGRESS_EVERY_GBS =
             1024 * 1024 * 1024; // 1GB
@@ -138,8 +142,7 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
      */
     @Override
     public float getProgress() throws IOException, InterruptedException {
-        return Math.min((float) this.keysRead /
-                (float) tableReader.estimatedKeys(), 1.0f);
+        return Math.min((float) this.keysRead / (float) estimatedKeys, 1.0f);
     }
 
     /**
@@ -180,17 +183,20 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
                 columnFamilyType,
                 comparator,
                 subcomparator);
-        this.tableReader = SSTableReader.open(
+        SSTableReader tableReader = SSTableReader.open(
                 desc, components, metadata, partitioner);
-        setTableScanner();
+        setTableScanner(tableReader);
     }
 
     /**
      * Mainly here for testing.
+     * 
+     * @param tableReader
      */
-    private void setTableScanner() {
+    private void setTableScanner(SSTableReader tableReader) {
         if (tableReader != null) {
-            this.tableScanner = tableReader.getDirectScanner();
+            this.tableScanner = tableReader.getDirectScanner(null);
+            this.estimatedKeys = tableReader.estimatedKeys();
         } else {
             throw new NullPointerException("Table reader not set.");
         }
@@ -199,7 +205,7 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
     /**
      * Mainly here for unit tests.
      * 
-     * @return
+     * @return SSTable descriptor.
      */
     public Descriptor getDescriptor() {
         return desc;
@@ -239,8 +245,8 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
             decompress(localDataTablePath, context);
         }
         components.add(Component.DATA);
-        desc = Descriptor.fromFilename(localDataTablePathStr);
-        Descriptor hdfsDesc = Descriptor.fromFilename(hdfsDataTablePathStr);
+        desc = BackwardsCompatibleDescriptor.fromFilename(localDataTablePathStr);
+        Descriptor hdfsDesc = BackwardsCompatibleDescriptor.fromFilename(hdfsDataTablePathStr);
         String indexPathStr = hdfsDesc.filenameFor(SSTable.COMPONENT_INDEX);
         components.add(Component.PRIMARY_INDEX);
         Path localIdxPath = new Path(desc.filenameFor(SSTable.COMPONENT_INDEX));
@@ -256,7 +262,7 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
         if (fs.exists(compressionTablePath)) {
             Path localCompressionPath =
                     new Path(desc.filenameFor(Component.COMPRESSION_INFO.name()));
-            LOG.info("Copying hdfs file from {} to local disk at.",
+            LOG.info("Copying hdfs file from {} to local disk at {}.",
                     compressionTablePath.toUri(),
                     localCompressionPath);
             fs.copyToLocalFile(compressionTablePath, localCompressionPath);
@@ -338,9 +344,8 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
             return FBUtilities.construct(
                     conf.get(parameterName), instanceType);
         } catch (ConfigurationException ce) {
-            throw new IllegalArgumentException("Can't construct " + instanceType
-                    + " from " + conf.get(parameterName) +
-                    ". Got: " + ce.getMessage());
+            throw new IllegalArgumentException(String.format("Can't construct %s from %s. Got: %s",
+                    instanceType, conf.get(parameterName), ce.getMessage()));
         }
     }
 
@@ -359,9 +364,11 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
         try {
             return TypeParser.parse(conf.get(parameterName));
         } catch (ConfigurationException ce) {
-            throw new IllegalArgumentException("Can't construct " + instanceType
-                    + " from " + conf.get(parameterName) +
-                    ". Got: " + ce.getMessage());
+            throw new IllegalArgumentException(String.format("Can't construct %s from %s. Got: %s",
+                    instanceType, conf.get(parameterName), ce.getMessage()));
+        } catch (SyntaxException se) {
+            throw new IllegalArgumentException(String.format("Can't construct %s from %s. Got: %s",
+                    instanceType, conf.get(parameterName), se.getMessage()));
         }
     }
 

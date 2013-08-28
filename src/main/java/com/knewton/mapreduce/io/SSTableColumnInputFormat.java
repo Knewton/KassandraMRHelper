@@ -17,7 +17,7 @@ package com.knewton.mapreduce.io;
 import com.knewton.mapreduce.SSTableColumnRecordReader;
 import com.knewton.mapreduce.SSTableRecordReader;
 
-import org.apache.cassandra.db.IColumn;
+import org.apache.cassandra.db.OnDiskAtom;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 
@@ -28,8 +28,7 @@ import java.nio.ByteBuffer;
  * Input format that instantiates an sstable column record reader.
  * 
  */
-public class SSTableColumnInputFormat extends SSTableInputFormat<ByteBuffer,
-        IColumn> {
+public class SSTableColumnInputFormat extends SSTableInputFormat<ByteBuffer, OnDiskAtom> {
 
     /**
      * Create a new record reader for this <code>split<code>.
@@ -40,7 +39,7 @@ public class SSTableColumnInputFormat extends SSTableInputFormat<ByteBuffer,
      * @throws InterruptedException
      */
     @Override
-    public SSTableRecordReader<ByteBuffer, IColumn> createRecordReader(
+    public SSTableRecordReader<ByteBuffer, OnDiskAtom> createRecordReader(
             InputSplit split, TaskAttemptContext context)
             throws IOException, InterruptedException {
         return new SSTableColumnRecordReader();
