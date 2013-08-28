@@ -21,6 +21,7 @@ import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.db.ColumnFamilyType;
 import org.apache.cassandra.db.marshal.LongType;
 import org.apache.cassandra.io.sstable.SSTableSimpleWriter;
+import org.apache.cassandra.service.StorageService;
 import org.apache.commons.cli.*;
 import org.apache.thrift.TException;
 
@@ -48,13 +49,13 @@ public class WriteSampleSSTable {
             TException {
         buildParametersFromArgs(args);
         CFMetaData cfMeta = new CFMetaData(
-                "demo-keyspace",
+                "demoKeyspace",
                 "StudentEvents",
                 ColumnFamilyType.Standard,
                 LongType.instance,
                 null);
         SSTableSimpleWriter simpleWriter = new SSTableSimpleWriter(
-                tableDirectory, cfMeta);
+                tableDirectory, cfMeta, StorageService.getPartitioner());
 
         List<ByteBuffer> studentIds =
                 RandomStudentEventGenerator.getStudentIds(numberOfStudents);

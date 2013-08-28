@@ -25,7 +25,7 @@ import java.nio.ByteBuffer;
 
 /**
  * Abstract mapper class that takes in a row key as its key and a column as its value. Used in
- * conjunction with {@linkSSTableColumnRecordReader}
+ * conjunction with {@link SSTableColumnRecordReader}
  * 
  * @param <K2>
  *            Out key
@@ -122,7 +122,7 @@ public abstract class SSTableColumnMapper<K1, V1, K2 extends WritableComparable,
      * 
      * @param key
      * @param context
-     * @return
+     * @return Mapper key of type <code>K1</code>
      */
     protected abstract K1 getMapperKey(ByteBuffer key, Context context);
 
@@ -132,7 +132,7 @@ public abstract class SSTableColumnMapper<K1, V1, K2 extends WritableComparable,
      * 
      * @param iColumn
      * @param context
-     * @return
+     * @return Mapper value of type <code>V1</code>
      */
     protected abstract V1 getMapperValue(IColumn iColumn, Context context);
 }

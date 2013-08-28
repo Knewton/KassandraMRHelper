@@ -118,10 +118,8 @@ public class RandomStudentEventGenerator {
         Collections.sort(studentIds, new Comparator<ByteBuffer>() {
             @Override
             public int compare(ByteBuffer o1, ByteBuffer o2) {
-                DecoratedKey<?> dk1 =
-                        StorageService.getPartitioner().decorateKey(o1);
-                DecoratedKey<?> dk2 =
-                        StorageService.getPartitioner().decorateKey(o2);
+                DecoratedKey dk1 = StorageService.getPartitioner().decorateKey(o1);
+                DecoratedKey dk2 = StorageService.getPartitioner().decorateKey(o2);
                 return dk1.compareTo(dk2);
             }
         });

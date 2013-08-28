@@ -15,8 +15,9 @@
 package com.knewton.mapreduce.io;
 
 import com.knewton.mapreduce.SSTableRecordReader;
+import com.knewton.mapreduce.io.sstable.BackwardsCompatibleDescriptor;
 
-import org.apache.cassandra.io.sstable.Component;
+import org.apache.cassandra.io.sstable.SSTable;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -30,6 +31,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+
+import javax.annotation.Nullable;
 
 /**
  * Input format for reading cassandra SSTables. When given an input directory, it expands all
@@ -46,10 +49,11 @@ public abstract class SSTableInputFormat<K, V> extends FileInputFormat<K, V> {
             LoggerFactory.getLogger(SSTableInputFormat.class);
 
     /**
-     * SSTables are not splittable so send the entire file to each record writer.
+     * Make SSTables not splittable for now so send the entire file to each record writer.
      * 
-     * @param job
+     * @param context
      *            The job context
+     * @param path
      * @return Returns false.
      */
     @Override
@@ -99,44 +103,44 @@ public abstract class SSTableInputFormat<K, V> extends FileInputFormat<K, V> {
      * Comparator class name for columns.
      * 
      * @param name
-     * @param conf
+     * @param job
      */
     public static void setComparatorClass(String name, Job job) {
-        job.getConfiguration()
-                .set(SSTableRecordReader.COLUMN_COMPARATOR_PARAMETER, name);
+        job.getConfiguration().set(
+                SSTableRecordReader.COLUMN_COMPARATOR_PARAMETER, name);
     }
 
     /**
      * This is not required if the column family type is standard.
      * 
      * @param name
-     * @param conf
+     * @param job
      */
     public static void setSubComparatorClass(String name, Job job) {
-        job.getConfiguration()
-                .set(SSTableRecordReader.COLUMN_SUBCOMPARATOR_PARAMETER, name);
+        job.getConfiguration().set(
+                SSTableRecordReader.COLUMN_SUBCOMPARATOR_PARAMETER, name);
     }
 
     /**
      * Partitioner for decorating keys.
      * 
      * @param name
-     * @param conf
+     * @param job
      */
     public static void setPartitionerClass(String name, Job job) {
-        job.getConfiguration()
-                .set(SSTableRecordReader.PARTITIONER_PARAMETER, name);
+        job.getConfiguration().set(
+                SSTableRecordReader.PARTITIONER_PARAMETER, name);
     }
 
     /**
      * Column family type needs to be set if the column family type is Super.
      * 
      * @param name
-     * @param conf
+     * @param job
      */
     public static void setColumnFamilyType(String name, Job job) {
-        job.getConfiguration()
-                .set(SSTableRecordReader.COLUMN_FAMILY_TYPE_PARAMETER, name);
+        job.getConfiguration().set(
+                SSTableRecordReader.COLUMN_FAMILY_TYPE_PARAMETER, name);
     }
 
     /**
@@ -144,11 +148,11 @@ public abstract class SSTableInputFormat<K, V> extends FileInputFormat<K, V> {
      * under the given input directory will be collected and processed.
      * 
      * @param name
-     * @param conf
+     * @param job
      */
     public static void setColumnFamilyName(String name, Job job) {
-        job.getConfiguration()
-                .set(COLUMN_FAMILY_NAME_PARAMETER, name);
+        job.getConfiguration().set(
+                COLUMN_FAMILY_NAME_PARAMETER, name);
     }
 
     /**
@@ -157,14 +161,15 @@ public abstract class SSTableInputFormat<K, V> extends FileInputFormat<K, V> {
      */
     public static class DataTablePathFilter implements PathFilter {
 
-        private String pattern;
+        @Nullable
+        private String operatingCF;
 
-        public DataTablePathFilter(String operatingCF) {
-            this.pattern = operatingCF + ".*" + Component.DATA.name();
+        public DataTablePathFilter(@Nullable String operatingCF) {
+            this.operatingCF = operatingCF;
         }
 
         public DataTablePathFilter() {
-            this("");
+            this(null);
         }
 
         /**
@@ -172,10 +177,16 @@ public abstract class SSTableInputFormat<K, V> extends FileInputFormat<K, V> {
          */
         @Override
         public boolean accept(Path path) {
-            if (path == null) {
+            // ignore if 1) path is null, 2) it's not a data file or 3) if it's a temporary file.
+            if (path == null || !path.getName().endsWith(SSTable.COMPONENT_DATA)
+                    || BackwardsCompatibleDescriptor.fromFilename(path.toString()).temporary) {
                 return false;
+            } else if (operatingCF == null) {
+                return true;
+            } else {
+                return BackwardsCompatibleDescriptor.fromFilename(path.toString()).cfname
+                        .equals(operatingCF);
             }
-            return path.getName().matches(pattern);
         }
 
     }
