@@ -1,7 +1,7 @@
 # This is here because cassandra complains when it's not. Non of the properties are really
 # used but since this is loaded by a static block in class DatabaseDescriptor if it's not
 # here things don't work.
-cluster_name: 'Test Cluster22'
+cluster_name: 'Test Cluster'
 initial_token: 0
 hinted_handoff_enabled: true
 max_hint_window_in_ms: 10800000 # 3 hours
