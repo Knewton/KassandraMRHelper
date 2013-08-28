@@ -10,6 +10,8 @@ and Mapper classes to help you with the process of reading data directly from
 Cassandra SSTables. By using this library you will avoid the sstable2json step. 
 This library does not require a live Cassandra cluster.
 
+KassandraMRHelper is compatible with Cassandra versions up to and including 1.2
+
 --------------------
 BUILDING THE PROJECT
 --------------------
