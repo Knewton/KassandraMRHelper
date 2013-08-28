@@ -14,7 +14,7 @@
  */
 package com.knewton.mapreduce;
 
-import org.apache.cassandra.db.IColumn;
+import org.apache.cassandra.db.OnDiskAtom;
 import org.apache.cassandra.io.sstable.SSTableIdentityIterator;
 
 import java.io.IOException;
@@ -26,7 +26,7 @@ import java.nio.ByteBuffer;
  * 
  */
 public class SSTableColumnRecordReader extends
-        SSTableRecordReader<ByteBuffer, IColumn> {
+        SSTableRecordReader<ByteBuffer, OnDiskAtom> {
 
     private SSTableIdentityIterator row;
 

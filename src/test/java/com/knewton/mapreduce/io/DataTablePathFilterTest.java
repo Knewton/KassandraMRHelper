@@ -30,14 +30,16 @@ public class DataTablePathFilterTest {
     @Test
     public void testDataTablePathFilter() {
         DataTablePathFilter pathFilter = new DataTablePathFilter();
-        assertTrue(pathFilter.accept(new Path("/some/path/table-Data.db")));
-        assertTrue(pathFilter.accept(new Path("table-Data.db")));
-        assertFalse(pathFilter.accept(new Path("/some/path/table-DATA.db")));
-        assertFalse(pathFilter.accept(new Path("table-Index.db")));
-        assertFalse(pathFilter.accept(new Path("table-INDEX.db")));
-        assertFalse(pathFilter.accept(new Path("/some/path/table-Index.db")));
+        assertTrue(pathFilter.accept(new Path("/some/path/table-g-321-Data.db")));
+        assertTrue(pathFilter.accept(new Path("path/table-g-321-Data.db")));
+        assertFalse(pathFilter.accept(new Path("/some/path/table-g-321-DATA.db")));
+        assertFalse(pathFilter.accept(new Path("/path/table-g-321-Index.db")));
+        assertFalse(pathFilter.accept(new Path("path/table-g-321-INDEX.db")));
+        assertFalse(pathFilter.accept(new Path("/some/path/table-g-321-Index.db")));
         assertFalse(pathFilter.accept(new Path("/")));
         assertFalse(pathFilter.accept(null));
+        // temp file, don't accept.
+        assertFalse(pathFilter.accept(new Path("/some/path/table-tmp-g-321-Index.db")));
     }
 
 }

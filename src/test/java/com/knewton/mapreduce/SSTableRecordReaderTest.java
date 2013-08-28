@@ -70,7 +70,7 @@ public class SSTableRecordReaderTest {
 
             @Mock
             // No op
-            private void setTableScanner() {
+            private void setTableScanner(SSTableReader tableReader) {
             }
         };
         SSTableColumnRecordReader rr = new SSTableColumnRecordReader();
@@ -122,8 +122,8 @@ public class SSTableRecordReaderTest {
             }
 
             @Mock
-            private void setTableScanner() {
-                // no op.
+            // No op.
+            private void setTableScanner(SSTableReader tableReader) {
             }
         };
         SSTableRowRecordReader rr = new SSTableRowRecordReader();
