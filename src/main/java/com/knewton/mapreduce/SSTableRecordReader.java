@@ -294,11 +294,11 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
                 localTablePath, compressionBufSize);
         File compressedFile = new File(localTablePath.toString());
         InputStream fis = new FileInputStream(compressedFile);
-        InputStream bis = new BufferedInputStream(fis);
+        InputStream bis = new BufferedInputStream(fis, compressionBufSize);
         InputStream sip = new SnappyInputStream(bis);
         File decompressedFile = new File(localTablePath.toString() + ".tmp");
         OutputStream os = new FileOutputStream(decompressedFile);
-        OutputStream bos = new BufferedOutputStream(os);
+        OutputStream bos = new BufferedOutputStream(os, compressionBufSize);
         byte[] inByteArr = new byte[compressionBufSize];
         int bytesRead = 0;
         int bytesSinceLastReport = 0;
