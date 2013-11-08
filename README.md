@@ -12,6 +12,9 @@ This library does not require a live Cassandra cluster.
 
 KassandraMRHelper is compatible with Cassandra versions up to and including 1.2
 
+Relevant blog post: 
+http://www.knewton.com/tech/blog/2013/11/cassandra-and-hadoop-introducing-the-kassandramrhelper
+
 --------------------
 BUILDING THE PROJECT
 --------------------
