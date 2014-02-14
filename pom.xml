@@ -3,8 +3,45 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.knewton.mapreduce</groupId>
     <artifactId>KassandraMRHelper</artifactId>
-    <version>0.2</version>
+    <version>0.2.1</version>
     <packaging>jar</packaging>
+    <name>KassandraMRHelper</name>
+    <description>Library for processing Cassandra SSTables with Hadoop MapReduce</description>
+    <url>https://github.com/Knewton/KassandraMRHelper</url>
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+            <comments>A business-friendly OSS license</comments>
+        </license>
+    </licenses>
+    <scm>
+        <connection>scm:git:git@github.com:Knewton/KassandraMRHelper.git</connection>
+        <developerConnection>scm:git:git@github.com:Knewton/KassandraMRHelper.git</developerConnection>
+        <url>git@github.com:Knewton/KassandraMRHelper.git</url>
+    </scm>
+    <developers>
+        <developer>
+            <id>giannis</id>
+            <name>Giannis Neokleous</name>
+            <email>giannis@knewton.com</email>
+            <url>http://www.giann.is</url>
+            <organization>Knewton</organization>
+            <organizationUrl>http://www.knewton.com</organizationUrl>
+            <roles>
+                <role>architect</role>
+                <role>developer</role>
+            </roles>
+            <timezone>-5</timezone>
+        </developer>
+    </developers>
+
+    <parent>
+        <groupId>org.sonatype.oss</groupId>
+        <artifactId>oss-parent</artifactId>
+        <version>7</version>
+    </parent>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -187,6 +224,18 @@
                             <goal>jar</goal>
                         </goals>
                         <phase>package</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>
