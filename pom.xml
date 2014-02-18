@@ -417,7 +417,6 @@
             <id>EMR</id>
             <properties>
                 <mapreduce.environment>EMR</mapreduce.environment>
-                <regid.unitid.path>s3n://mys3bucket/</regid.unitid.path>
             </properties>
         </profile>
 
