@@ -1,16 +1,16 @@
 /**
  * Copyright 2013 Knewton
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software distributed under the License
  * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
- * 
+ *
  */
 package com.knewton.mapreduce.io;
 
@@ -37,7 +37,7 @@ import javax.annotation.Nullable;
 /**
  * Input format for reading cassandra SSTables. When given an input directory, it expands all
  * subdirectories and identifies SSTable data files that can be used as input.
- * 
+ *
  * @param <K>
  * @param <V>
  */
@@ -50,7 +50,7 @@ public abstract class SSTableInputFormat<K, V> extends FileInputFormat<K, V> {
 
     /**
      * Make SSTables not splittable for now so send the entire file to each record writer.
-     * 
+     *
      * @param context
      *            The job context
      * @param path
@@ -63,7 +63,7 @@ public abstract class SSTableInputFormat<K, V> extends FileInputFormat<K, V> {
 
     /**
      * Expands all directories passed as input and keeps only valid data tables.
-     * 
+     *
      * @param job
      * @return A list of all the data tables found under the input directories.
      * @throws IOException
@@ -101,7 +101,7 @@ public abstract class SSTableInputFormat<K, V> extends FileInputFormat<K, V> {
 
     /**
      * Comparator class name for columns.
-     * 
+     *
      * @param name
      * @param job
      */
@@ -112,7 +112,7 @@ public abstract class SSTableInputFormat<K, V> extends FileInputFormat<K, V> {
 
     /**
      * This is not required if the column family type is standard.
-     * 
+     *
      * @param name
      * @param job
      */
@@ -123,7 +123,7 @@ public abstract class SSTableInputFormat<K, V> extends FileInputFormat<K, V> {
 
     /**
      * Partitioner for decorating keys.
-     * 
+     *
      * @param name
      * @param job
      */
@@ -134,7 +134,7 @@ public abstract class SSTableInputFormat<K, V> extends FileInputFormat<K, V> {
 
     /**
      * Column family type needs to be set if the column family type is Super.
-     * 
+     *
      * @param name
      * @param job
      */
@@ -146,7 +146,7 @@ public abstract class SSTableInputFormat<K, V> extends FileInputFormat<K, V> {
     /**
      * Set the name of the column family to read. This is optional. If not set all the datatables
      * under the given input directory will be collected and processed.
-     * 
+     *
      * @param name
      * @param job
      */
@@ -157,7 +157,7 @@ public abstract class SSTableInputFormat<K, V> extends FileInputFormat<K, V> {
 
     /**
      * Custom path filter for SSTables.
-     * 
+     *
      */
     public static class DataTablePathFilter implements PathFilter {
 

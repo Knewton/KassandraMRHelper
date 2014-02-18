@@ -1,22 +1,22 @@
 /**
  * Copyright 2013 Knewton
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software distributed under the License
  * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
- * 
+ *
  */
 package com.knewton.mapreduce;
 
+import com.knewton.mapreduce.util.CounterConstants;
 import com.knewton.thrift.StudentEvent;
 import com.knewton.thrift.StudentEventData;
-import com.knewton.mapreduce.util.CounterConstants;
 
 import org.apache.cassandra.db.IColumn;
 import org.apache.hadoop.conf.Configuration;
@@ -42,7 +42,7 @@ import javax.annotation.Nullable;
 /**
  * Abstract mapper that converts a cassandra column to a student event and a cassandra row key to a
  * student id.
- * 
+ *
  * @param <K>
  * @param <V>
  */
@@ -50,7 +50,7 @@ import javax.annotation.Nullable;
 public abstract class StudentEventAbstractMapper<K extends WritableComparable, V extends Writable>
         extends SSTableColumnMapper<Long, StudentEvent, K, V> {
 
-    private TDeserializer decoder;
+    private final TDeserializer decoder;
     private Interval timeRange;
     private static final Logger LOG =
             LoggerFactory.getLogger(StudentEventAbstractMapper.class);
@@ -108,7 +108,7 @@ public abstract class StudentEventAbstractMapper<K extends WritableComparable, V
 
     /**
      * Make a student event out of a column in cassandra.
-     * 
+     *
      * @param value
      * @param context
      * @return
@@ -144,7 +144,7 @@ public abstract class StudentEventAbstractMapper<K extends WritableComparable, V
 
     /**
      * Checks to see if the event is in the desired time range.
-     * 
+     *
      * @param eventId
      * @param context
      * @return
@@ -164,7 +164,7 @@ public abstract class StudentEventAbstractMapper<K extends WritableComparable, V
      * Sets up a DateTime interval for excluding student events. When start time is not set then it
      * defaults to the beginning of time. If end date is not specified then it defaults to
      * "the end of time".
-     * 
+     *
      * @param conf
      */
     private void setupTimeRange(Configuration conf) {
