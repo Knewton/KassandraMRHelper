@@ -1,16 +1,16 @@
 /**
  * Copyright 2013 Knewton
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software distributed under the License
  * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
- * 
+ *
  */
 package com.knewton.mapreduce;
 
@@ -53,7 +53,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * row record reader ({@link SSTableRowRecordReader}), passing an entire row as a key/value pair and
  * a column record reader ({@link SSTableColumnRecordReader}) passing individual columns as values.
  * Used in conjunction with {@link SSTableInputFormat}
- * 
+ *
  * @param <K>
  * @param <V>
  */
@@ -91,7 +91,7 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
 
     /**
      * Close all opened resources and delete temporary local files used for reading the data.
-     * 
+     *
      * @throws IOException
      */
     @Override
@@ -110,7 +110,7 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
 
     /**
      * Returns the value of the current key.
-     * 
+     *
      * @return The current key in the data table.
      * @throws IOException
      * @throws InterruptedException
@@ -122,7 +122,7 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
 
     /**
      * Returns an iterator of the columns under the <code>currentKey<code>.
-     * 
+     *
      * @return SSTableIdentityIterator Column iterator.
      * @throws IOException
      * @throws InterruptedException
@@ -135,7 +135,7 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
 
     /**
      * Method for calculating the progress made so far from this record reader.
-     * 
+     *
      * @return A value from 0 to 1 indicating the progress so far.
      * @throws IOException
      * @throws InterruptedException
@@ -147,7 +147,7 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
 
     /**
      * Performs all the necessary actions to initialize and prepare this record reader.
-     * 
+     *
      * @param inputSplit
      * @param context
      * @throws IOException
@@ -190,7 +190,7 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
 
     /**
      * Mainly here for testing.
-     * 
+     *
      * @param tableReader
      */
     private void setTableScanner(SSTableReader tableReader) {
@@ -204,7 +204,7 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
 
     /**
      * Mainly here for unit tests.
-     * 
+     *
      * @return SSTable descriptor.
      */
     public Descriptor getDescriptor() {
@@ -213,7 +213,7 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
 
     /**
      * Moves all the minimum required tables for the table reader to work to local disk.
-     * 
+     *
      * @param split
      *            The table to work on.
      * @param context
@@ -277,7 +277,7 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
      * Decompresses input files that were snappy compressed before opening them with the sstable
      * reader.It writes a new decompressed file with the same name as the compressed one. The old
      * one gets deleted.
-     * 
+     *
      * @param localTablePath
      * @param context
      * @throws IOException
@@ -320,7 +320,7 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
 
     /**
      * Creates a column family type from <code>conf</code>
-     * 
+     *
      * @param conf
      * @return A column family type. Simple or Super.
      */
@@ -330,7 +330,7 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
 
     /**
      * Get an instance of a partitioner.
-     * 
+     *
      * @param conf
      * @param parameterName
      *            The name of the parameter to get from conf and instantiate.
@@ -351,7 +351,7 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
 
     /**
      * Get an instance of a comparator used for comparing keys in the sstables.
-     * 
+     *
      * @param conf
      * @param parameterName
      *            The parameter name from the configuration object.
@@ -375,7 +375,7 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
     /**
      * Minimum required parameters needed to be set for this type of record reader. Many other
      * parameters are inferred from the table filenames. Fail fast if conf parameters are missing.
-     * 
+     *
      * @param conf
      */
     private void validateConfiguration(Configuration conf) {
@@ -387,7 +387,7 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
 
     /**
      * Increments the number of keys read from the data table.
-     * 
+     *
      * @param val
      *            The value to be added to <code>keysRead<code>.
      */

@@ -1,16 +1,16 @@
 /**
  * Copyright 2013 Knewton
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software distributed under the License
  * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
- * 
+ *
  */
 package com.knewton.mapreduce;
 
@@ -24,17 +24,16 @@ import java.nio.ByteBuffer;
 
 /**
  * Abstract mapper class that takes in a row key as its key and a column as its value. Used in
- * conjunction with {@linkSSTableRowRecordReader}
- * 
+ * conjunction with {@link SSTableRowRecordReader}
+ *
  * @author Giannis Neokleous
- * 
+ *
  * @param <K1>
  * @param <V1>
  * @param <K2>
  * @param <V2>
  */
-@SuppressWarnings("rawtypes")
-public abstract class SSTableRowMapper<K1, V1, K2 extends WritableComparable, V2 extends Writable>
+public abstract class SSTableRowMapper<K1, V1, K2 extends WritableComparable<?>, V2 extends Writable>
         extends Mapper<ByteBuffer, SSTableIdentityIterator, K2, V2> {
 
     private ByteBuffer key;
@@ -62,7 +61,7 @@ public abstract class SSTableRowMapper<K1, V1, K2 extends WritableComparable, V2
     /**
      * This should be defined in the child class to output any key/value pairs that need to go to a
      * reducer.
-     * 
+     *
      * @param key
      * @param value
      * @param context
@@ -76,7 +75,7 @@ public abstract class SSTableRowMapper<K1, V1, K2 extends WritableComparable, V2
      * Any modifications to the row key <code>ByteBuffer</code> or the row iterator
      * <code>SSTableIdentityIterator</code> needs to be rewinded. Make sure you know what you're
      * doing if you call this.
-     * 
+     *
      * @return The current Cassandra row iterator.
      */
     protected SSTableIdentityIterator getRowIterator() {
@@ -86,7 +85,7 @@ public abstract class SSTableRowMapper<K1, V1, K2 extends WritableComparable, V2
     /**
      * Any modifications to this row key <code>ByteBuffer</code> should be rewinded. Make sure you
      * know what you're doing if you call this.
-     * 
+     *
      * @return The original <code>ByteBuffer</code> representing the row key.
      */
     protected ByteBuffer getRowKey() {
@@ -96,7 +95,7 @@ public abstract class SSTableRowMapper<K1, V1, K2 extends WritableComparable, V2
     /**
      * Get the mapper specific key that would make the sstable row key into something more
      * meaningful.
-     * 
+     *
      * @param key
      * @param context
      * @return
@@ -105,7 +104,7 @@ public abstract class SSTableRowMapper<K1, V1, K2 extends WritableComparable, V2
 
     /**
      * Get the mapper specific value that would make a row iterator into something more meaningful.
-     * 
+     *
      * @param rowIter
      * @param context
      * @return
