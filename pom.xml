@@ -252,7 +252,7 @@
                     <check>
                         <branchRate>85</branchRate>
                         <lineRate>85</lineRate>
-                        <haltOnFailure>true</haltOnFailure>
+                        <haltOnFailure>false</haltOnFailure>
                         <regexes>
                             <regex>
                                 <pattern>com.knewton.*.example.*</pattern>
@@ -431,7 +431,6 @@
             </activation>
             <properties>
                 <mapreduce.environment>HadoopMapReduce</mapreduce.environment>
-                <regid.unitid.path>/dfs/</regid.unitid.path>
             </properties>
         </profile>
 
@@ -439,7 +438,6 @@
             <id>local</id>
             <properties>
                 <mapreduce.environment>local</mapreduce.environment>
-                <regid.unitid.path>/dfs/</regid.unitid.path>
             </properties>
         </profile>
 
