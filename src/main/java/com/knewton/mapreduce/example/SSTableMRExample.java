@@ -38,7 +38,7 @@ import java.net.URL;
 /**
  * Example job for reading data from SSTables. This example uses the StudentEvents column family
  * that stores serialized StudentEvent objects defined in a thrift specification under the thrift
- * source directory. Sample SSTables can be generated with WriteSampleSSTable in the test resources.
+ * source directory. Sample SSTables can be generated with WriteSampleSSTable in the test source.
  *
  * @author Giannis Neokleous
  *
