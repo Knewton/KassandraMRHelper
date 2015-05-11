@@ -43,8 +43,9 @@ public abstract class SSTableRowMapper<K1, V1, K2 extends WritableComparable<?>,
      * {@inheritDoc}
      */
     @Override
-    public void map(ByteBuffer key, SSTableIdentityIterator rowIter,
-            Context context) throws IOException, InterruptedException {
+    public void map(ByteBuffer key, SSTableIdentityIterator rowIter, Context context)
+            throws IOException, InterruptedException {
+
         K1 mapKey = getMapperKey(key, context);
         if (mapKey == null) {
             return;
@@ -61,15 +62,9 @@ public abstract class SSTableRowMapper<K1, V1, K2 extends WritableComparable<?>,
     /**
      * This should be defined in the child class to output any key/value pairs that need to go to a
      * reducer.
-     *
-     * @param key
-     * @param value
-     * @param context
-     * @throws IOException
-     * @throws InterruptedException
      */
-    public abstract void performMapTask(K1 key, V1 value,
-            Context context) throws IOException, InterruptedException;
+    public abstract void performMapTask(K1 key, V1 value, Context context) throws IOException,
+            InterruptedException;
 
     /**
      * Any modifications to the row key <code>ByteBuffer</code> or the row iterator
@@ -96,9 +91,7 @@ public abstract class SSTableRowMapper<K1, V1, K2 extends WritableComparable<?>,
      * Get the mapper specific key that would make the sstable row key into something more
      * meaningful.
      *
-     * @param key
-     * @param context
-     * @return
+     * @return The mapper key read from a {@link ByteBuffer}
      */
     protected abstract K1 getMapperKey(ByteBuffer key, Context context);
 
@@ -107,9 +100,8 @@ public abstract class SSTableRowMapper<K1, V1, K2 extends WritableComparable<?>,
      *
      * @param rowIter
      * @param context
-     * @return
+     * @return The mapper value read from a cassandra row
      */
-    protected abstract V1 getMapperValue(SSTableIdentityIterator rowIter,
-            Context context);
+    protected abstract V1 getMapperValue(SSTableIdentityIterator rowIter, Context context);
 
 }

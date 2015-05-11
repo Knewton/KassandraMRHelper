@@ -14,13 +14,20 @@
  */
 package com.knewton.mapreduce.example;
 
+import com.knewton.mapreduce.constant.PropertyConstants;
 import com.knewton.mapreduce.io.SSTableColumnInputFormat;
 import com.knewton.mapreduce.io.SSTableInputFormat;
 import com.knewton.mapreduce.io.StudentEventWritable;
 
 import org.apache.cassandra.db.marshal.LongType;
 import org.apache.cassandra.dht.RandomPartitioner;
-import org.apache.commons.cli.*;
+import org.apache.commons.cli.BasicParser;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
@@ -45,20 +52,10 @@ import java.net.URL;
  */
 public class SSTableMRExample {
 
-    private static final Logger LOG = LoggerFactory.getLogger(
-            SSTableMRExample.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SSTableMRExample.class);
 
-    /**
-     * @param args
-     * @throws IOException
-     * @throws ClassNotFoundException
-     * @throws InterruptedException
-     * @throws URISyntaxException
-     * @throws ParseException
-     */
-    public static void main(String[] args) throws IOException,
-            InterruptedException, ClassNotFoundException, URISyntaxException,
-            ParseException {
+    public static void main(String[] args) throws IOException, InterruptedException,
+            ClassNotFoundException, URISyntaxException, ParseException {
 
         long startTime = System.currentTimeMillis();
         Options options = buildOptions();
@@ -91,30 +88,26 @@ public class SSTableMRExample {
             FileOutputFormat.setCompressOutput(job, true);
         }
         job.waitForCompletion(true);
-        LOG.info("Total runtime: {}s",
-                (System.currentTimeMillis() - startTime) / 1000);
+        LOG.info("Total runtime: {}s", (System.currentTimeMillis() - startTime) / 1000);
     }
 
     private static Job getJobConf(CommandLine cli)
             throws URISyntaxException, IOException {
         Configuration conf = new Configuration();
-        Job job = new Job(conf);
+        Job job = Job.getInstance(conf);
         ClassLoader loader = SSTableMRExample.class.getClassLoader();
         URL url = loader.getResource("knewton-site.xml");
         conf.addResource(url);
 
-        SSTableInputFormat.setPartitionerClass(
-                RandomPartitioner.class.getName(), job);
+        SSTableInputFormat.setPartitionerClass(RandomPartitioner.class.getName(), job);
         SSTableInputFormat.setComparatorClass(LongType.class.getName(), job);
         SSTableInputFormat.setColumnFamilyName("StudentEvents", job);
 
         if (cli.hasOption('s')) {
-            conf.set(StudentEventMapper.START_DATE_PARAMETER_NAME,
-                    cli.getOptionValue('s'));
+            conf.set(PropertyConstants.START_DATE.txt, cli.getOptionValue('s'));
         }
         if (cli.hasOption('e')) {
-            conf.set(StudentEventMapper.END_DATE_PARAMETER_NAME,
-                    cli.getOptionValue('e'));
+            conf.set(PropertyConstants.END_DATE.txt, cli.getOptionValue('e'));
         }
         return job;
     }
@@ -123,35 +116,32 @@ public class SSTableMRExample {
      * Prints usage information for running this program with all the options.
      *
      * @param options
+     *            Options that were used.
      */
     private static void printUsage(Options options) {
         HelpFormatter formatter = new HelpFormatter();
-        formatter.printHelp(
-                "SSTableMRExample [OPTIONS] <input_dir> <output_dir>", options);
+        formatter.printHelp("SSTableMRExample [OPTIONS] <input_dir> <output_dir>", options);
         System.exit(0);
     }
 
     private static Options buildOptions() {
         Options options = new Options();
-        Option option = new Option(
-                "s",
-                "startDate",
-                true,
-                "The start date that student events should get included from. If not specified then it defaults to the beginning of time.");
+        Option option = new Option("s",
+                                   "startDate",
+                                   true,
+                                   "The start date that student events should get included from. If not specified then it defaults to the beginning of time.");
         option.setRequired(false);
         options.addOption(option);
-        option = new Option(
-                "e",
-                "endDate",
-                true,
-                "The end date that student events should get included. If not specified then it defaults to the \"end of time\".");
+        option = new Option("e",
+                            "endDate",
+                            true,
+                            "The end date that student events should get included. If not specified then it defaults to the \"end of time\".");
         option.setRequired(false);
         options.addOption(option);
-        option = new Option(
-                "c",
-                "compress",
-                false,
-                "Set this option if you want the output to be compressed.");
+        option = new Option("c",
+                            "compress",
+                            false,
+                            "Set this option if you want the output to be compressed.");
         option.setRequired(false);
         options.addOption(option);
         options.addOption("h", "help", false, "Prints this help message.");

@@ -16,6 +16,8 @@ package com.knewton.mapreduce.io;
 
 import com.knewton.thrift.StudentEvent;
 
+import com.google.common.base.Objects;
+
 import org.apache.hadoop.io.Writable;
 import org.apache.thrift.TDeserializer;
 import org.apache.thrift.TException;
@@ -67,8 +69,7 @@ public class StudentEventWritable implements Writable, Cloneable {
         try {
             deserializer.deserialize(studentEvent, data);
         } catch (TException e) {
-            throw new IOException("Could not deserialize StudentEvent. Got: " +
-                    e.getMessage());
+            throw new IOException("Could not deserialize StudentEvent. Got: " + e.getMessage(), e);
         }
     }
 
@@ -81,8 +82,7 @@ public class StudentEventWritable implements Writable, Cloneable {
         try {
             data = serializer.serialize(studentEvent);
         } catch (TException e) {
-            throw new IOException("Could not serialize StudentEvent. Got: " +
-                    e.getMessage());
+            throw new IOException("Could not serialize StudentEvent. Got: " + e.getMessage(), e);
         }
         out.writeLong(timestamp);
         out.writeInt(data.length);
@@ -99,8 +99,8 @@ public class StudentEventWritable implements Writable, Cloneable {
 
     @Override
     public StudentEventWritable clone() {
-        StudentEventWritable sew = new StudentEventWritable(
-                new StudentEvent(studentEvent), this.timestamp);
+        StudentEvent se = new StudentEvent(studentEvent);
+        StudentEventWritable sew = new StudentEventWritable(se, this.timestamp);
         return sew;
     }
 
@@ -109,25 +109,18 @@ public class StudentEventWritable implements Writable, Cloneable {
      */
     @Override
     public String toString() {
-        StringBuffer strBuffer = new StringBuffer();
-        strBuffer.append("{ timestamp:")
-                .append(timestamp)
-                .append(", studentEvent: ")
-                .append(studentEvent.toString())
-                .append(" }");
-        return strBuffer.toString();
+        return Objects.toStringHelper(this.getClass())
+                      .add("timestamp", timestamp)
+                      .add("studentEvent", studentEvent).toString();
     }
 
     /**
      * Comparator for StudentEventWritables based on the timestamp.
-     *
      */
-    public static class StudentEventTimestampComparator implements
-            Comparator<StudentEventWritable> {
+    public static class StudentEventTimestampComparator implements Comparator<StudentEventWritable> {
 
         @Override
-        public int compare(StudentEventWritable sew1,
-                StudentEventWritable sew2) {
+        public int compare(StudentEventWritable sew1, StudentEventWritable sew2) {
             // Use LongComparator. Takes care of overflows.
             return new Long(sew1.timestamp).compareTo(sew2.timestamp);
         }
@@ -137,14 +130,11 @@ public class StudentEventWritable implements Writable, Cloneable {
      * Comparator for StudentEventWritables based on the student event id.
      *
      */
-    public static class StudentEventIdComparator implements
-            Comparator<StudentEventWritable> {
+    public static class StudentEventIdComparator implements Comparator<StudentEventWritable> {
 
         @Override
-        public int compare(StudentEventWritable sew1,
-                StudentEventWritable sew2) {
-            return new Long(sew1.studentEvent.getId()).
-                    compareTo(sew2.studentEvent.getId());
+        public int compare(StudentEventWritable sew1, StudentEventWritable sew2) {
+            return new Long(sew1.studentEvent.getId()).compareTo(sew2.studentEvent.getId());
         }
     }
 

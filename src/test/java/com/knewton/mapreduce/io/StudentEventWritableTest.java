@@ -1,32 +1,24 @@
 /**
  * Copyright 2013 Knewton
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software distributed under the License
  * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
- * 
+ *
  */
 package com.knewton.mapreduce.io;
 
-import static org.junit.Assert.*;
-
+import com.knewton.mapreduce.io.StudentEventWritable.StudentEventIdComparator;
+import com.knewton.mapreduce.io.StudentEventWritable.StudentEventTimestampComparator;
 import com.knewton.thrift.StudentEvent;
 import com.knewton.thrift.StudentEventData;
-import com.knewton.mapreduce.io.StudentEventWritable;
 
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
-import org.apache.thrift.TDeserializer;
-import org.apache.thrift.TException;
-import org.apache.thrift.protocol.TCompactProtocol;
-import org.apache.thrift.protocol.TProtocolFactory;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
@@ -35,46 +27,89 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.util.Random;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class StudentEventWritableTest {
 
-    private TDeserializer deserializer;
+    @Test
+    public void testWriteRead() throws Exception {
 
-    @Before
-    public void setUp() throws Exception {
-        TProtocolFactory factory = new TCompactProtocol.Factory();
-        this.deserializer = new TDeserializer(factory);
+        Random rand = new Random();
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        DataOutputStream dout = new DataOutputStream(byteArrayOutputStream);
+
+        StudentEventData seData = new StudentEventData(123L, System.currentTimeMillis(), "type", 2);
+        seData.setBook("book");
+        seData.setCourse("course");
+        StudentEvent seEvent = new StudentEvent(rand.nextLong(), seData);
+        StudentEventWritable seWritable = new StudentEventWritable(seEvent, rand.nextLong());
+
+        seWritable.write(dout);
+
+        StudentEventWritable deserializedWritable = new StudentEventWritable();
+        InputStream is = new ByteArrayInputStream(byteArrayOutputStream.toByteArray());
+        DataInputStream dis = new DataInputStream(is);
+        deserializedWritable.readFields(dis);
+
+        assertEquals(seWritable.getTimestamp(), deserializedWritable.getTimestamp());
+        assertEquals(seWritable.getStudentEvent(), deserializedWritable.getStudentEvent());
+    }
+
+    @Test(expected = IOException.class)
+    public void testWriteWithException() throws Exception {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        DataOutputStream dout = new DataOutputStream(byteArrayOutputStream);
+        StudentEventWritable seWritable = new StudentEventWritable(new StudentEvent(), 0L);
+        seWritable.write(dout);
+    }
+
+    @Test(expected = IOException.class)
+    public void testReadWithException() throws Exception {
+        ByteBuffer bb = ByteBuffer.wrap(new byte[100]);
+        DataInputStream dis = new DataInputStream(new ByteArrayInputStream(bb.array()));
+        StudentEventWritable seWritable = new StudentEventWritable();
+        seWritable.readFields(dis);
     }
 
     @Test
-    public void testSerialization() throws DecoderException, TException,
-            IOException {
-        byte[] studentEventDataBytes = Hex.decodeHex(
-                eventDataString.toCharArray());
-        StudentEventData studentEventData = new StudentEventData();
-        deserializer.deserialize(studentEventData, studentEventDataBytes);
-        StudentEvent studentEvent = new StudentEvent(1, studentEventData);
-        StudentEventWritable sew = new StudentEventWritable(studentEvent, 10L);
+    public void testClone() {
+        StudentEventData seData = new StudentEventData(123L, System.currentTimeMillis(), "type", 2);
+        seData.setBook("book");
+        seData.setCourse("course");
+        StudentEvent seEvent = new StudentEvent(10L, seData);
 
-        ByteArrayOutputStream byteArrayOutputStream =
-                new ByteArrayOutputStream();
-        DataOutputStream dout = new DataOutputStream(byteArrayOutputStream);
-        sew.write(dout);
+        StudentEventWritable seWritable = new StudentEventWritable(seEvent, 100L);
+        StudentEventWritable clonedWritable = seWritable.clone();
 
-        StudentEventWritable deserializedWritable = new StudentEventWritable();
-        InputStream is = new ByteArrayInputStream(
-                byteArrayOutputStream.toByteArray());
-        DataInputStream dis = new DataInputStream(is);
-        deserializedWritable.readFields(dis);
-        assertEquals(sew.getStudentEvent(),
-                deserializedWritable.getStudentEvent());
-        assertEquals(sew.getTimestamp(),
-                deserializedWritable.getTimestamp());
+        assertEquals(seWritable.getStudentEvent(), clonedWritable.getStudentEvent());
+        assertEquals(seWritable.getTimestamp(), clonedWritable.getTimestamp());
     }
 
-    private static final String eventDataString =
-            "169ad7a6d4e5d2abec4d16bae2bed5e04f181ee7aca9e188a5ec8d90eabe83ec" +
-                    "8594ee9bb2e6aaaeefa182e39184e7a3941508181dd480e28c98e692" +
-                    "8de29a9fe7bc9bebb380ec99bfe480b0e990bde7b0a9181de29291eb" +
-                    "86bfe582b3e0b686e2879cd79ce2838ae3a2aae3a9bee7949000";
+    @Test
+    public void testCompareTimestamp() {
+        StudentEventTimestampComparator comparator = new StudentEventTimestampComparator();
+        StudentEventWritable smaller = new StudentEventWritable(new StudentEvent(), 1L);
+        StudentEventWritable bigger = new StudentEventWritable(new StudentEvent(), 2L);
+        assertTrue(comparator.compare(smaller, bigger) < 0);
+        assertTrue(comparator.compare(bigger, smaller) > 0);
+        assertEquals(0, comparator.compare(smaller, smaller));
+    }
+
+    @Test
+    public void testCompareStudentEventId() {
+        StudentEventIdComparator comparator = new StudentEventIdComparator();
+        StudentEvent seSmaller = new StudentEvent(1L, new StudentEventData());
+        StudentEventWritable smaller = new StudentEventWritable(seSmaller, 2L);
+
+        StudentEvent seBigger = new StudentEvent(2L, new StudentEventData());
+        StudentEventWritable bigger = new StudentEventWritable(seBigger, 2L);
+
+        assertTrue(comparator.compare(smaller, bigger) < 0);
+        assertTrue(comparator.compare(bigger, smaller) > 0);
+        assertEquals(0, comparator.compare(smaller, smaller));
+    }
 }

@@ -32,8 +32,7 @@ import java.nio.ByteBuffer;
  * @param <V2>
  *            Out value
  */
-@SuppressWarnings("rawtypes")
-public abstract class SSTableColumnMapper<K1, V1, K2 extends WritableComparable, V2 extends Writable>
+public abstract class SSTableColumnMapper<K1, V1, K2 extends WritableComparable<?>, V2 extends Writable>
         extends Mapper<ByteBuffer, IColumn, K2, V2> {
 
     private boolean skipDeletedColumns;
@@ -48,8 +47,8 @@ public abstract class SSTableColumnMapper<K1, V1, K2 extends WritableComparable,
      * {@inheritDoc}
      */
     @Override
-    public void map(ByteBuffer key, IColumn iColumn,
-            Context context) throws IOException, InterruptedException {
+    public void map(ByteBuffer key, IColumn iColumn, Context context) throws IOException,
+            InterruptedException {
         if (skipDeletedColumns && iColumn instanceof DeletedColumn) {
             return;
         }
@@ -69,18 +68,11 @@ public abstract class SSTableColumnMapper<K1, V1, K2 extends WritableComparable,
     /**
      * This should be defined in the child class to output any key/value pairs that need to go to a
      * reducer.
-     *
-     * @param key
-     * @param value
-     * @param context
-     * @throws IOException
-     * @throws InterruptedException
      */
-    public abstract void performMapTask(K1 key, V1 value,
-            Context context) throws IOException, InterruptedException;
+    public abstract void performMapTask(K1 key, V1 value, Context context) throws IOException,
+            InterruptedException;
 
     /**
-     *
      * @return True if deleted columns will be skipped false otherwise.
      */
     public boolean isSkipDeletedColumns() {
@@ -88,8 +80,8 @@ public abstract class SSTableColumnMapper<K1, V1, K2 extends WritableComparable,
     }
 
     /**
-     *
      * @param skipDeletedColumns
+     *            When set to true columns marked for deletion will be ignored.
      */
     public void setSkipDeletedColumns(boolean skipDeletedColumns) {
         this.skipDeletedColumns = skipDeletedColumns;
@@ -120,8 +112,6 @@ public abstract class SSTableColumnMapper<K1, V1, K2 extends WritableComparable,
      * Get the mapper specific key that would make the sstable row key into something more
      * meaningful.
      *
-     * @param key
-     * @param context
      * @return Mapper key of type <code>K1</code>
      */
     protected abstract K1 getMapperKey(ByteBuffer key, Context context);
@@ -130,8 +120,6 @@ public abstract class SSTableColumnMapper<K1, V1, K2 extends WritableComparable,
      * Get the mapper specific value that would make an SSTable column into something more
      * meaningful.
      *
-     * @param iColumn
-     * @param context
      * @return Mapper value of type <code>V1</code>
      */
     protected abstract V1 getMapperValue(IColumn iColumn, Context context);

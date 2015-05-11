@@ -35,7 +35,7 @@ import static org.apache.cassandra.io.sstable.Component.separator;
  * Cassandra 1.1-1.2 file format:
  * &lt;ksname&gt;-&lt;cfname&gt;-[tmp-][&lt;version&gt;-]&lt;gen&gt;-&lt;component&gt;
  *
- * @author giannis
+ * @author Giannis Neokleous
  *
  */
 public class BackwardsCompatibleDescriptor extends Descriptor {

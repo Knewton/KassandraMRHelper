@@ -33,11 +33,6 @@ public class SSTableRowInputFormat extends SSTableInputFormat<ByteBuffer,
 
     /**
      * Create a new record reader for this <code>split<code>.
-     *
-     * @param split
-     * @param context
-     * @throws IOException
-     * @throws InterruptedException
      */
     @Override
     public SSTableRecordReader<ByteBuffer, SSTableIdentityIterator>
