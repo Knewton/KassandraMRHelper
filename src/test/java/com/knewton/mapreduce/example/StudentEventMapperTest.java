@@ -113,13 +113,13 @@ public class StudentEventMapperTest {
      */
     @Test
     public void testEndRangeStudentEvents() throws Exception {
-        conf.set(PropertyConstants.START_DATE.txt, "2013-03-28T23:03:02.394Z");
+        conf.set(PropertyConstants.END_DATE.txt, "2013-03-28T23:03:02.394Z");
         underTest.setup(mockedContext);
 
         // send event outside of time range
 
-        // Mar.28.2013.19:53:38.0.0
-        DateTime dt = new DateTime(2013, 3, 28, 19, 53, 10, DateTimeZone.UTC);
+        // Mar.29.2013.03:07:21.0.0
+        DateTime dt = new DateTime(2013, 3, 29, 3, 7, 21, DateTimeZone.UTC);
         long eventId = dt.getMillis();
         ByteBuffer randomKey = RandomStudentEventGenerator.getRandomIdBuffer();
         ByteBuffer columnName = ByteBuffer.wrap(new byte[8]);
@@ -133,8 +133,8 @@ public class StudentEventMapperTest {
 
         // send event inside of time range
 
-        // Mar.29.2013.03:07:21.0.0
-        dt = new DateTime(2013, 3, 29, 3, 7, 21, DateTimeZone.UTC);
+        // Mar.28.2013.19:53:38.0.0
+        dt = new DateTime(2013, 3, 28, 19, 53, 10, DateTimeZone.UTC);
         eventId = dt.getMillis();
         randomKey = RandomStudentEventGenerator.getRandomIdBuffer();
         columnName = ByteBuffer.wrap(new byte[8]);
