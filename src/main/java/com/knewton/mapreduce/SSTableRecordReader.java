@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Knewton
+ * Copyright 2013, 2014, 2015 Knewton
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -14,9 +14,12 @@
  */
 package com.knewton.mapreduce;
 
+import com.knewton.mapreduce.constant.PropertyConstants;
 import com.knewton.mapreduce.io.SSTableInputFormat;
 import com.knewton.mapreduce.io.sstable.BackwardsCompatibleDescriptor;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 
 import org.apache.cassandra.config.CFMetaData;
@@ -43,7 +46,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xerial.snappy.SnappyInputStream;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -55,26 +65,18 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * Used in conjunction with {@link SSTableInputFormat}
  *
  * @param <K>
+ *            Key in type
  * @param <V>
+ *            Value in type
  */
 public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
 
-    public static final String COLUMN_COMPARATOR_PARAMETER =
-            "com.knewton.cassandra.column.comparator";
-    public static final String COLUMN_SUBCOMPARATOR_PARAMETER =
-            "com.knewton.cassandra.column.subcomparator";
-    public static final String COLUMN_FAMILY_TYPE_PARAMETER =
-            "com.knewton.cassandra.cftype";
-    public static final String PARTITIONER_PARAMETER =
-            "com.knewton.partitioner";
-    private static final String COMPRESSION_ENABLED_PARAMETER_NAME =
-            "com.knewton.cassandra.backup.compression";
-    private static final String DECOMPRESS_BUFFER_PARAMETER_NAME =
-            "com.knewton.cassandra.backup.compress.buffersize";
     /**
      * Size of the decompression buffer in KBs.
      */
     private static final int DEFAULT_DECOMPRESS_BUFFER_SIZE = 512;
+    private static final int REPORT_DECOMPRESS_PROGRESS_EVERY_GBS = 1024 * 1024 * 1024; // 1GB
+    private static final Logger LOG = LoggerFactory.getLogger(SSTableRecordReader.class);
 
     protected SSTableScanner tableScanner;
     protected K currentKey;
@@ -84,15 +86,8 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
     private Descriptor desc;
     private long estimatedKeys;
 
-    private static final int REPORT_DECOMPRESS_PROGRESS_EVERY_GBS =
-            1024 * 1024 * 1024; // 1GB
-    private static final Logger LOG =
-            LoggerFactory.getLogger(SSTableRecordReader.class);
-
     /**
      * Close all opened resources and delete temporary local files used for reading the data.
-     *
-     * @throws IOException
      */
     @Override
     public void close() throws IOException {
@@ -112,8 +107,6 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
      * Returns the value of the current key.
      *
      * @return The current key in the data table.
-     * @throws IOException
-     * @throws InterruptedException
      */
     @Override
     public K getCurrentKey() throws IOException, InterruptedException {
@@ -124,8 +117,6 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
      * Returns an iterator of the columns under the <code>currentKey<code>.
      *
      * @return SSTableIdentityIterator Column iterator.
-     * @throws IOException
-     * @throws InterruptedException
      */
     @Override
     public V getCurrentValue()
@@ -137,8 +128,6 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
      * Method for calculating the progress made so far from this record reader.
      *
      * @return A value from 0 to 1 indicating the progress so far.
-     * @throws IOException
-     * @throws InterruptedException
      */
     @Override
     public float getProgress() throws IOException, InterruptedException {
@@ -147,11 +136,6 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
 
     /**
      * Performs all the necessary actions to initialize and prepare this record reader.
-     *
-     * @param inputSplit
-     * @param context
-     * @throws IOException
-     * @throws InterruptedException
      */
     @Override
     public void initialize(InputSplit inputSplit, TaskAttemptContext context)
@@ -162,44 +146,40 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
         FileSplit split = (FileSplit) inputSplit;
         validateConfiguration(conf);
         // Get comparator. Subcomparator can be null.
-        AbstractType<?> comparator = getConfComparator(
-                conf, COLUMN_COMPARATOR_PARAMETER, "comparator");
+        AbstractType<?> comparator =
+            getConfComparator(conf, PropertyConstants.COLUMN_COMPARATOR.txt, "comparator");
         AbstractType<?> subcomparator = null;
-        if (conf.get(COLUMN_SUBCOMPARATOR_PARAMETER) != null) {
-            subcomparator = getConfComparator(
-                    conf, COLUMN_SUBCOMPARATOR_PARAMETER, "subcomparator");
+        if (conf.get(PropertyConstants.COLUMN_SUBCOMPARATOR.txt) != null) {
+            subcomparator = getConfComparator(conf, PropertyConstants.COLUMN_SUBCOMPARATOR.txt,
+                                              "subcomparator");
         }
         // Get partitioner for keys
-        IPartitioner<?> partitioner = getConfPartitioner(
-                conf, PARTITIONER_PARAMETER, "partitioner");
+        IPartitioner<?> partitioner = getConfPartitioner(conf, PropertyConstants.PARTITIONER.txt,
+                                                         "partitioner");
         // Column family type. Use Standard if property is not set.
         ColumnFamilyType columnFamilyType = getColumnFamilyType(conf);
         // Move minimum required db tables to local disk.
         copyTablesToLocal(split, context);
         // Open table and get scanner
-        CFMetaData metadata = new CFMetaData(
-                getDescriptor().ksname,
-                getDescriptor().cfname,
-                columnFamilyType,
-                comparator,
-                subcomparator);
-        SSTableReader tableReader = SSTableReader.open(
-                desc, components, metadata, partitioner);
+        CFMetaData metadata = new CFMetaData(getDescriptor().ksname,
+                                             getDescriptor().cfname,
+                                             columnFamilyType,
+                                             comparator,
+                                             subcomparator);
+        SSTableReader tableReader = openSSTableReader(partitioner, metadata);
         setTableScanner(tableReader);
     }
 
-    /**
-     * Mainly here for testing.
-     *
-     * @param tableReader
-     */
+    @VisibleForTesting
+    SSTableReader openSSTableReader(IPartitioner<?> partitioner, CFMetaData metadata)
+            throws IOException {
+        return SSTableReader.open(desc, components, metadata, partitioner);
+    }
+
     private void setTableScanner(SSTableReader tableReader) {
-        if (tableReader != null) {
-            this.tableScanner = tableReader.getDirectScanner(null);
-            this.estimatedKeys = tableReader.estimatedKeys();
-        } else {
-            throw new NullPointerException("Table reader not set.");
-        }
+        Preconditions.checkNotNull(tableReader, "Table reader not set");
+        this.tableScanner = tableReader.getDirectScanner(null);
+        this.estimatedKeys = tableReader.estimatedKeys();
     }
 
     /**
@@ -207,7 +187,8 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
      *
      * @return SSTable descriptor.
      */
-    public Descriptor getDescriptor() {
+    @VisibleForTesting
+    protected Descriptor getDescriptor() {
         return desc;
     }
 
@@ -216,11 +197,9 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
      *
      * @param split
      *            The table to work on.
-     * @param context
-     * @throws IOException
      */
-    private void copyTablesToLocal(FileSplit split, TaskAttemptContext context)
-            throws IOException {
+    @VisibleForTesting
+    void copyTablesToLocal(FileSplit split, TaskAttemptContext context) throws IOException {
         Path dataTablePath = split.getPath();
         Configuration conf = context.getConfiguration();
         FileSystem fs = FileSystem.get(dataTablePath.toUri(), conf);
@@ -228,8 +207,8 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
         String localDataTablePathStr = hdfsDataTablePathStr;
         // Make path relative due to EMR permissions
         if (localDataTablePathStr.startsWith("/")) {
-            String mapTaskId = conf.get("mapred.task.id");
-            String mapTempDir = conf.get("mapred.temp.dir");
+            String mapTaskId = conf.get("mapreduce.task.attempt.id");
+            String mapTempDir = conf.get("mapreduce.cluster.temp.dir");
             String taskWorkDir = mapTempDir + File.separator + mapTaskId;
             // String jobWorkDir = conf.get("job.local.dir");
             LOG.info("Appending {} to {}", taskWorkDir, localDataTablePathStr);
@@ -239,8 +218,7 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
         LOG.info("Copying hdfs file from {} to local disk at {}.",
                 dataTablePath.toUri(), localDataTablePath.toUri());
         fs.copyToLocalFile(dataTablePath, localDataTablePath);
-        boolean isCompressed =
-                conf.getBoolean(COMPRESSION_ENABLED_PARAMETER_NAME, false);
+        boolean isCompressed = conf.getBoolean(PropertyConstants.COMPRESSION_ENABLED.txt, false);
         if (isCompressed) {
             decompress(localDataTablePath, context);
         }
@@ -275,23 +253,16 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
 
     /**
      * Decompresses input files that were snappy compressed before opening them with the sstable
-     * reader.It writes a new decompressed file with the same name as the compressed one. The old
+     * reader. It writes a new decompressed file with the same name as the compressed one. The old
      * one gets deleted.
-     *
-     * @param localTablePath
-     * @param context
-     * @throws IOException
      */
-    private void decompress(Path localTablePath, TaskAttemptContext context)
-            throws IOException {
-        context.setStatus(
-                String.format("Decompressing %s", localTablePath.toUri()));
-        int compressionBufSize = context.getConfiguration().getInt(
-                DECOMPRESS_BUFFER_PARAMETER_NAME,
-                DEFAULT_DECOMPRESS_BUFFER_SIZE);
+    private void decompress(Path localTablePath, TaskAttemptContext context) throws IOException {
+        context.setStatus(String.format("Decompressing %s", localTablePath.toUri()));
+        int compressionBufSize =
+            context.getConfiguration().getInt(PropertyConstants.DECOMPRESS_BUFFER.txt,
+                                              DEFAULT_DECOMPRESS_BUFFER_SIZE);
         compressionBufSize *= 1024;
-        LOG.info("Decompressing {} with buffer size {}.",
-                localTablePath, compressionBufSize);
+        LOG.info("Decompressing {} with buffer size {}.", localTablePath, compressionBufSize);
         File compressedFile = new File(localTablePath.toString());
         InputStream fis = new FileInputStream(compressedFile);
         InputStream bis = new BufferedInputStream(fis, compressionBufSize);
@@ -307,8 +278,7 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
             bytesSinceLastReport += bytesRead;
             // Avoid timeouts. Report progress to the jobtracker.
             if (bytesSinceLastReport % REPORT_DECOMPRESS_PROGRESS_EVERY_GBS > 0) {
-                context.setStatus(String.format("Decompressed %d bytes.",
-                        bytesSinceLastReport));
+                context.setStatus(String.format("Decompressed %d bytes.", bytesSinceLastReport));
                 bytesSinceLastReport -= REPORT_DECOMPRESS_PROGRESS_EVERY_GBS;
             }
         }
@@ -321,28 +291,25 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
     /**
      * Creates a column family type from <code>conf</code>
      *
-     * @param conf
      * @return A column family type. Simple or Super.
      */
     private ColumnFamilyType getColumnFamilyType(Configuration conf) {
-        return ColumnFamilyType.create(conf.get(COLUMN_FAMILY_TYPE_PARAMETER));
+        return ColumnFamilyType.create(conf.get(PropertyConstants.COLUMN_FAMILY_TYPE.txt));
     }
 
     /**
      * Get an instance of a partitioner.
      *
-     * @param conf
      * @param parameterName
      *            The name of the parameter to get from conf and instantiate.
      * @param instanceType
      *            Description of the instantiating parameter.
      * @return Instantiated object.
      */
-    private <T> T getConfPartitioner(Configuration conf,
-            String parameterName, String instanceType) {
+    private <T> T getConfPartitioner(Configuration conf, String parameterName,
+                                     String instanceType) {
         try {
-            return FBUtilities.construct(
-                    conf.get(parameterName), instanceType);
+            return FBUtilities.construct(conf.get(parameterName), instanceType);
         } catch (ConfigurationException ce) {
             throw new IllegalArgumentException(String.format("Can't construct %s from %s. Got: %s",
                     instanceType, conf.get(parameterName), ce.getMessage()));
@@ -352,37 +319,32 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
     /**
      * Get an instance of a comparator used for comparing keys in the sstables.
      *
-     * @param conf
      * @param parameterName
      *            The parameter name from the configuration object.
      * @param instanceType
      *            Description of the object being instantiated.
      * @return A new instance of the comparator.
      */
-    private AbstractType<?> getConfComparator(Configuration conf,
-            String parameterName, String instanceType) {
+    private AbstractType<?> getConfComparator(Configuration conf, String parameterName,
+                                              String instanceType) {
         try {
             return TypeParser.parse(conf.get(parameterName));
-        } catch (ConfigurationException ce) {
-            throw new IllegalArgumentException(String.format("Can't construct %s from %s. Got: %s",
-                    instanceType, conf.get(parameterName), ce.getMessage()));
-        } catch (SyntaxException se) {
-            throw new IllegalArgumentException(String.format("Can't construct %s from %s. Got: %s",
-                    instanceType, conf.get(parameterName), se.getMessage()));
+        } catch (SyntaxException | ConfigurationException ce) {
+            String msg = String.format("Can't construct %s from %s. Got: %s",
+                                       instanceType, conf.get(parameterName), ce.getMessage());
+            throw new IllegalArgumentException(msg);
         }
     }
 
     /**
      * Minimum required parameters needed to be set for this type of record reader. Many other
      * parameters are inferred from the table filenames. Fail fast if conf parameters are missing.
-     *
-     * @param conf
      */
     private void validateConfiguration(Configuration conf) {
-        checkNotNull(conf.get(COLUMN_COMPARATOR_PARAMETER),
-                COLUMN_COMPARATOR_PARAMETER + " not set.");
-        checkNotNull(conf.get(PARTITIONER_PARAMETER),
-                PARTITIONER_PARAMETER + " not set.");
+        checkNotNull(conf.get(PropertyConstants.COLUMN_COMPARATOR.txt),
+                     PropertyConstants.COLUMN_COMPARATOR.txt + " not set.");
+        checkNotNull(conf.get(PropertyConstants.PARTITIONER.txt),
+                     PropertyConstants.PARTITIONER.txt + " not set.");
     }
 
     /**

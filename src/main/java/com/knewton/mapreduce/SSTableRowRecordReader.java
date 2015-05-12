@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Knewton
+ * Copyright 2013, 2014, 2015 Knewton
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -30,14 +30,11 @@ public class SSTableRowRecordReader extends SSTableRecordReader<ByteBuffer,
      * Gets the next key and value in the table.
      *
      * @return True if there's more keys. False otherwise.
-     * @throws IOException
-     * @throws InterruptedException
      */
     @Override
     public boolean nextKeyValue() throws IOException, InterruptedException {
         if (tableScanner.hasNext()) {
-            SSTableIdentityIterator row =
-                    (SSTableIdentityIterator) tableScanner.next();
+            SSTableIdentityIterator row = (SSTableIdentityIterator) tableScanner.next();
             currentKey = row.getKey().key;
             currentValue = row;
             incKeysRead(1);

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Knewton
+ * Copyright 2013, 2014, 2015 Knewton
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -35,7 +35,7 @@ import static org.apache.cassandra.io.sstable.Component.separator;
  * Cassandra 1.1-1.2 file format:
  * &lt;ksname&gt;-&lt;cfname&gt;-[tmp-][&lt;version&gt;-]&lt;gen&gt;-&lt;component&gt;
  *
- * @author giannis
+ * @author Giannis Neokleous
  *
  */
 public class BackwardsCompatibleDescriptor extends Descriptor {

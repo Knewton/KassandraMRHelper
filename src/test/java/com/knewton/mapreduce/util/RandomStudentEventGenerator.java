@@ -1,16 +1,16 @@
 /**
- * Copyright 2013 Knewton
- * 
+ * Copyright 2013, 2014, 2015 Knewton
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software distributed under the License
  * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
- * 
+ *
  */
 package com.knewton.mapreduce.util;
 
@@ -38,7 +38,7 @@ import java.util.List;
 /**
  * Various random utility methods for generating ids and student events. Used by the sample table
  * writer.
- * 
+ *
  */
 public class RandomStudentEventGenerator {
 
@@ -48,15 +48,14 @@ public class RandomStudentEventGenerator {
 
     /**
      * Generates a random student event. Sets the date of the event to now.
-     * 
+     *
      * @return Random student event with event time set to now.
      */
     public static StudentEvent getRandomStudentEvent() {
-        StudentEventData eventData = new StudentEventData(
-                getRandomId(),
-                DateTime.now().getMillis(),
-                RandomStringUtils.randomAlphabetic(10),
-                RandomUtils.nextInt(101));
+        StudentEventData eventData = new StudentEventData(getRandomId(),
+                                                          DateTime.now().getMillis(),
+                                                          RandomStringUtils.randomAlphabetic(10),
+                                                          RandomUtils.nextInt(101));
         eventData.setBook(RandomStringUtils.randomAlphabetic(10));
         eventData.setCourse(RandomStringUtils.randomAlphabetic(10));
         return new StudentEvent(initTimeInMillis++, eventData);
@@ -64,8 +63,8 @@ public class RandomStudentEventGenerator {
 
     /**
      * Generates a random long used in ids.
-     * 
-     * @return
+     *
+     * @return A random ID
      */
     public static long getRandomId() {
         return RandomUtils.nextLong() + 1;
@@ -73,8 +72,8 @@ public class RandomStudentEventGenerator {
 
     /**
      * Helper method for wrapping an id in a <code>ByteBuffer</code>.
-     * 
-     * @return
+     *
+     * @return A byte buffer with a random ID
      */
     public static ByteBuffer getRandomIdBuffer() {
         long id = getRandomId();
@@ -86,14 +85,13 @@ public class RandomStudentEventGenerator {
 
     /**
      * Helper method for serializing a {@link StudentEventData} object.
-     * 
+     *
      * @param eventData
      * @return A <code>thrift</code> serialized <code>byte[]</code> using the
      *         {@link TCompactProtocol}
      * @throws TException
      */
-    public static byte[] serializeStudentEventData(StudentEventData eventData)
-            throws TException {
+    public static byte[] serializeStudentEventData(StudentEventData eventData) throws TException {
         byte[] data = encoder.serialize(eventData);
         return data;
     }
@@ -101,12 +99,12 @@ public class RandomStudentEventGenerator {
     /**
      * Helper method for generating decorated increasing student ids. Used by
      * {@link WriteSampleSSTable} for writing a sorted SSTable.
-     * 
-     * @return
+     *
+     * @return A list of byte buffers with student IDs
      */
     public static List<ByteBuffer> getStudentIds(int numberOfStudents) {
         long studentId = 1000000L;
-        List<ByteBuffer> studentIds = Lists.newArrayList();
+        List<ByteBuffer> studentIds = Lists.newArrayListWithCapacity(numberOfStudents);
 
         for (int i = 0; i < numberOfStudents; i++) {
             ByteBuffer bb = ByteBuffer.wrap(new byte[8]);

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Knewton
+ * Copyright 2013, 2014, 2015 Knewton
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -14,13 +14,13 @@
  */
 package com.knewton.mapreduce.util;
 
+import com.google.common.base.Preconditions;
+
 public enum MREnvironment {
+
     LOCAL("local"),
     HADOOP_MAPREDUCE("HadoopMapReduce"),
     EMR("EMR");
-
-    public static String MAPREDUCE_ENVIRONMENT_PARAMETER =
-            "com.knewton.mapreduce.environment";
 
     private String value;
 
@@ -41,18 +41,17 @@ public enum MREnvironment {
      * Gets an enum type from a string value.
      *
      * @param strVal
-     * @return
+     *            The string value representation of the environment
+     * @return The Hadoop environment.
      */
     public static MREnvironment fromValue(String strVal) {
-        if (strVal != null) {
-            for (MREnvironment mre : MREnvironment.values()) {
-                if (mre.getValue().equalsIgnoreCase(strVal)) {
-                    return mre;
-                }
+        Preconditions.checkNotNull(strVal, "Parameter cannot be null");
+        for (MREnvironment mre : MREnvironment.values()) {
+            if (mre.getValue().equalsIgnoreCase(strVal)) {
+                return mre;
             }
         }
-        throw new IllegalArgumentException(String.format(
-                "Cannot determine type from %s", strVal));
+        throw new IllegalArgumentException(String.format("Cannot determine type from %s", strVal));
     }
 
 }

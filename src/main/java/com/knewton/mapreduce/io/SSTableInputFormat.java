@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Knewton
+ * Copyright 2013, 2014, 2015 Knewton
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -14,10 +14,13 @@
  */
 package com.knewton.mapreduce.io;
 
-import com.knewton.mapreduce.SSTableRecordReader;
+import com.knewton.mapreduce.constant.PropertyConstants;
 import com.knewton.mapreduce.io.sstable.BackwardsCompatibleDescriptor;
 
+import com.google.common.collect.Lists;
+
 import org.apache.cassandra.io.sstable.SSTable;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -29,7 +32,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -43,10 +45,10 @@ import javax.annotation.Nullable;
  */
 public abstract class SSTableInputFormat<K, V> extends FileInputFormat<K, V> {
 
-    private static final String COLUMN_FAMILY_NAME_PARAMETER =
-            "com.knewton.inputformat.cassandra.columnfamily";
-    private static final Logger LOG =
-            LoggerFactory.getLogger(SSTableInputFormat.class);
+    public static final String FULL_PRIAM_BACKUP_DIR_NAME = "SNAP";
+    public static final String INCREMENTAL_PRIAM_BACKUP_DIR_NAME = "SST";
+    public static final String COMPLETE_BACKUP_INDICATOR_DIR_NAME = "META";
+    private static final Logger LOG = LoggerFactory.getLogger(SSTableInputFormat.class);
 
     /**
      * Make SSTables not splittable for now so send the entire file to each record writer.
@@ -64,95 +66,134 @@ public abstract class SSTableInputFormat<K, V> extends FileInputFormat<K, V> {
     /**
      * Expands all directories passed as input and keeps only valid data tables.
      *
-     * @param job
      * @return A list of all the data tables found under the input directories.
-     * @throws IOException
      */
     @Override
     protected List<FileStatus> listStatus(JobContext job) throws IOException {
+        Configuration conf = job.getConfiguration();
         List<FileStatus> files = super.listStatus(job);
-        String operatingCF =
-                job.getConfiguration().get(COLUMN_FAMILY_NAME_PARAMETER);
-        DataTablePathFilter dataTableFilter;
-        if (operatingCF != null) {
-            dataTableFilter = new DataTablePathFilter(operatingCF);
-        } else {
-            dataTableFilter = new DataTablePathFilter();
-        }
+        DataTablePathFilter dataTableFilter = getDataTableFilter(conf);
+        files = cleanUpBackupDir(files);
         for (int i = 0; i < files.size(); i++) {
             FileStatus file = files.get(i);
+            Path p = file.getPath();
             // Expand if directory
-            if (file.isDir()) {
-                Path p = file.getPath();
+            if (file.isDirectory() && p != null) {
                 LOG.info("Expanding {}", p);
-                FileSystem fs = p.getFileSystem(job.getConfiguration());
+                FileSystem fs = p.getFileSystem(conf);
                 FileStatus[] children = fs.listStatus(p);
-                files.addAll(i + 1, Arrays.asList(children));
+                List<FileStatus> listChildren = Lists.newArrayList(children);
+                listChildren = cleanUpBackupDir(listChildren);
+                files.addAll(i + 1, listChildren);
             }
             if (!dataTableFilter.accept(file.getPath())) {
-                LOG.info("Removing: " + file.getPath().toString());
+                LOG.info("Removing {}", file.getPath());
                 files.remove(i);
                 i--;
             }
         }
-
         return files;
+    }
+
+    /**
+     * Remove INCREMENTAL_PRIAM_BACKUP_DIR_NAME if found FULL_PRIAM_BACKUP_DIR_NAME
+     *
+     * @param files
+     *            - a list of FileStus
+     * @return The list with INCREMENTAL_PRIAM_BACKUP_DIR_NAME removed if FULL_PRIAM_BACKUP_DIR_NAME
+     *         found
+     */
+    private List<FileStatus> cleanUpBackupDir(List<FileStatus> files) {
+        boolean foundFullBackupDir = false;
+        for (FileStatus nestedDirStatus : files) {
+            String nestedDirName = nestedDirStatus.getPath().getName();
+            if (nestedDirName.equals(FULL_PRIAM_BACKUP_DIR_NAME)) {
+                foundFullBackupDir = true;
+            }
+        }
+        if (foundFullBackupDir) {
+            for (int i = 0; i < files.size(); i++) {
+                FileStatus nestedDirStatus = files.get(i);
+                String nestedDirName = nestedDirStatus.getPath().getName();
+                if (nestedDirName.equals(INCREMENTAL_PRIAM_BACKUP_DIR_NAME)) {
+                    LOG.info("Removing {}", nestedDirStatus.getPath());
+                    files.remove(i);
+                    i--;
+                }
+            }
+        }
+        return files;
+    }
+
+    /**
+     * Configure the DataTableFilter and return it.
+     *
+     * @return The DataTableFilter.
+     */
+    private DataTablePathFilter getDataTableFilter(Configuration conf) {
+        String operatingCF = conf.get(PropertyConstants.COLUMN_FAMILY_NAME.txt);
+        return new DataTablePathFilter(operatingCF);
     }
 
     /**
      * Comparator class name for columns.
      *
-     * @param name
+     * @param value
+     *            The value of the property
      * @param job
+     *            The current job
      */
-    public static void setComparatorClass(String name, Job job) {
-        job.getConfiguration().set(
-                SSTableRecordReader.COLUMN_COMPARATOR_PARAMETER, name);
+    public static void setComparatorClass(String value, Job job) {
+        job.getConfiguration().set(PropertyConstants.COLUMN_COMPARATOR.txt, value);
     }
 
     /**
      * This is not required if the column family type is standard.
      *
-     * @param name
+     * @param value
+     *            The value of the property
      * @param job
+     *            The current job
      */
-    public static void setSubComparatorClass(String name, Job job) {
-        job.getConfiguration().set(
-                SSTableRecordReader.COLUMN_SUBCOMPARATOR_PARAMETER, name);
+    public static void setSubComparatorClass(String value, Job job) {
+        job.getConfiguration().set(PropertyConstants.COLUMN_SUBCOMPARATOR.txt, value);
     }
 
     /**
      * Partitioner for decorating keys.
      *
-     * @param name
+     * @param value
+     *            The value of the property
      * @param job
+     *            The current job
      */
-    public static void setPartitionerClass(String name, Job job) {
-        job.getConfiguration().set(
-                SSTableRecordReader.PARTITIONER_PARAMETER, name);
+    public static void setPartitionerClass(String value, Job job) {
+        job.getConfiguration().set(PropertyConstants.PARTITIONER.txt, value);
     }
 
     /**
      * Column family type needs to be set if the column family type is Super.
      *
-     * @param name
+     * @param value
+     *            The value of the property
      * @param job
+     *            The current job
      */
-    public static void setColumnFamilyType(String name, Job job) {
-        job.getConfiguration().set(
-                SSTableRecordReader.COLUMN_FAMILY_TYPE_PARAMETER, name);
+    public static void setColumnFamilyType(String value, Job job) {
+        job.getConfiguration().set(PropertyConstants.COLUMN_FAMILY_TYPE.txt, value);
     }
 
     /**
      * Set the name of the column family to read. This is optional. If not set all the datatables
      * under the given input directory will be collected and processed.
      *
-     * @param name
+     * @param value
+     *            The value of the property
      * @param job
+     *            The current job
      */
-    public static void setColumnFamilyName(String name, Job job) {
-        job.getConfiguration().set(
-                COLUMN_FAMILY_NAME_PARAMETER, name);
+    public static void setColumnFamilyName(String value, Job job) {
+        job.getConfiguration().set(PropertyConstants.COLUMN_FAMILY_NAME.txt, value);
     }
 
     /**

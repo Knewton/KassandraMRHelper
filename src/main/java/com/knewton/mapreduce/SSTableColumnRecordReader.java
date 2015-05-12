@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Knewton
+ * Copyright 2013, 2014, 2015 Knewton
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -25,8 +25,7 @@ import java.nio.ByteBuffer;
  * single column.
  *
  */
-public class SSTableColumnRecordReader extends
-        SSTableRecordReader<ByteBuffer, OnDiskAtom> {
+public class SSTableColumnRecordReader extends SSTableRecordReader<ByteBuffer, OnDiskAtom> {
 
     private SSTableIdentityIterator row;
 
@@ -34,8 +33,6 @@ public class SSTableColumnRecordReader extends
      * Gets the next key and value in the table.
      *
      * @return True if there's more keys. False otherwise.
-     * @throws IOException
-     * @throws InterruptedException
      */
     @Override
     public boolean nextKeyValue() throws IOException, InterruptedException {

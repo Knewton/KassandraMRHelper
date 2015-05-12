@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Knewton
+ * Copyright 2013, 2014, 2015 Knewton
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -18,8 +18,7 @@ public class CounterConstants {
     public static final String STUDENT_EVENTS_JOB = "STUDENT_EVENTS";
     public static final String STUDENT_EVENTS_SKIPPED = "STUDENT_EVENTS_SKIPPED";
     public static final String STUDENT_EVENTS_COUNT = "STUDENT_EVENTS_COUNT";
-    public static final String STUDENT_EVENTS_PROCESSED =
-            "STUDENT_EVENTS_PROCESSED";
+    public static final String STUDENT_EVENTS_PROCESSED = "STUDENT_EVENTS_PROCESSED";
     public static final String STUDENT_EVENT_DESERIALIZATION_ERRORS =
             "STUDENT_EVENT_DESERIALIZATION_ERRORS";
 }

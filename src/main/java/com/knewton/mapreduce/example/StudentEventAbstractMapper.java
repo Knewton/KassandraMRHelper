@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Knewton
+ * Copyright 2013, 2014, 2015 Knewton
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -12,8 +12,10 @@
  * the License.
  *
  */
-package com.knewton.mapreduce;
+package com.knewton.mapreduce.example;
 
+import com.knewton.mapreduce.SSTableColumnMapper;
+import com.knewton.mapreduce.constant.PropertyConstants;
 import com.knewton.mapreduce.util.CounterConstants;
 import com.knewton.thrift.StudentEvent;
 import com.knewton.thrift.StudentEventData;
@@ -46,23 +48,18 @@ import javax.annotation.Nullable;
  * @param <K>
  * @param <V>
  */
-@SuppressWarnings("rawtypes")
-public abstract class StudentEventAbstractMapper<K extends WritableComparable, V extends Writable>
+public abstract class StudentEventAbstractMapper<K extends WritableComparable<?>, V extends Writable>
         extends SSTableColumnMapper<Long, StudentEvent, K, V> {
 
     private final TDeserializer decoder;
     private Interval timeRange;
-    private static final Logger LOG =
-            LoggerFactory.getLogger(StudentEventAbstractMapper.class);
+    private static final Logger LOG = LoggerFactory.getLogger(StudentEventAbstractMapper.class);
 
-    public static final String DATE_TIME_STRING_FORMAT =
-            "yyyy'-'MM'-'dd'T'HH':'mm':'ss.SSSZ"; // 2013-03-31T04:03:02.394-04:00
-    public static final String START_DATE_PARAMETER_NAME =
-            "com.knewton.studentevents.date.start";
-    public static final String END_DATE_PARAMETER_NAME =
-            "com.knewton.studentevents.date.end";
-    public static final String IGNORE_TEST_UUIDS_PARAMETER_NAME =
-            "com.knewton.studentevents.ignore_test_uuids";
+    /**
+     * Time date format. Example: 2013-03-31T04:03:02.394-04:00
+     */
+    public static final String DATE_TIME_STRING_FORMAT = "yyyy'-'MM'-'dd'T'HH':'mm':'ss.SSSZ";
+
     /**
      * Helper constant for avoiding date time overflows.
      */
@@ -78,8 +75,7 @@ public abstract class StudentEventAbstractMapper<K extends WritableComparable, V
      * Setup time range for excluding student events.
      */
     @Override
-    protected void setup(Context context) throws IOException,
-            InterruptedException {
+    protected void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
         setupTimeRange(context.getConfiguration());
     }
@@ -145,16 +141,14 @@ public abstract class StudentEventAbstractMapper<K extends WritableComparable, V
     /**
      * Checks to see if the event is in the desired time range.
      *
-     * @param eventId
-     * @param context
-     * @return
+     * @return True if the event is in the configured time interval
      */
     private boolean isInTimeRange(long eventId, Context context) {
         DateTime eventTime = new DateTime(eventId).withZone(DateTimeZone.UTC);
         // Skip events outside of the desired time range.
         if (timeRange != null && !timeRange.contains(eventTime)) {
             context.getCounter(CounterConstants.STUDENT_EVENTS_JOB,
-                    CounterConstants.STUDENT_EVENTS_SKIPPED).increment(1);
+                               CounterConstants.STUDENT_EVENTS_SKIPPED).increment(1);
             return false;
         }
         return true;
@@ -164,14 +158,11 @@ public abstract class StudentEventAbstractMapper<K extends WritableComparable, V
      * Sets up a DateTime interval for excluding student events. When start time is not set then it
      * defaults to the beginning of time. If end date is not specified then it defaults to
      * "the end of time".
-     *
-     * @param conf
      */
     private void setupTimeRange(Configuration conf) {
-        DateTimeFormatter dtf =
-                DateTimeFormat.forPattern(DATE_TIME_STRING_FORMAT).withZoneUTC();
-        String startDateStr = conf.get(START_DATE_PARAMETER_NAME);
-        String endDateStr = conf.get(END_DATE_PARAMETER_NAME);
+        DateTimeFormatter dtf = DateTimeFormat.forPattern(DATE_TIME_STRING_FORMAT).withZoneUTC();
+        String startDateStr = conf.get(PropertyConstants.START_DATE.txt);
+        String endDateStr = conf.get(PropertyConstants.END_DATE.txt);
         // No need to instantiate timeRange.
         if (startDateStr == null && endDateStr == null) {
             return;
@@ -180,15 +171,13 @@ public abstract class StudentEventAbstractMapper<K extends WritableComparable, V
         if (startDateStr != null) {
             startDate = dtf.parseDateTime(startDateStr);
         } else {
-            startDate = new DateTime(Long.MIN_VALUE + ONE_DAY_IN_MILLIS)
-                    .withZone(DateTimeZone.UTC);
+            startDate = new DateTime(Long.MIN_VALUE + ONE_DAY_IN_MILLIS).withZone(DateTimeZone.UTC);
         }
         DateTime endDate;
         if (endDateStr != null) {
             endDate = dtf.parseDateTime(endDateStr);
         } else {
-            endDate = new DateTime(Long.MAX_VALUE - ONE_DAY_IN_MILLIS)
-                    .withZone(DateTimeZone.UTC);
+            endDate = new DateTime(Long.MAX_VALUE - ONE_DAY_IN_MILLIS).withZone(DateTimeZone.UTC);
         }
         this.timeRange = new Interval(startDate, endDate);
     }

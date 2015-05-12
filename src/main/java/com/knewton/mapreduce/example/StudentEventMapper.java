@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Knewton
+ * Copyright 2013, 2014, 2015 Knewton
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -14,7 +14,6 @@
  */
 package com.knewton.mapreduce.example;
 
-import com.knewton.mapreduce.StudentEventAbstractMapper;
 import com.knewton.mapreduce.io.StudentEventWritable;
 import com.knewton.thrift.StudentEvent;
 
@@ -29,10 +28,10 @@ public class StudentEventMapper extends StudentEventAbstractMapper<LongWritable,
      * {@inheritDoc}
      */
     @Override
-    public void performMapTask(Long key, StudentEvent value,
-            Context context) throws IOException, InterruptedException {
-        context.write(new LongWritable(key),
-                new StudentEventWritable(value, getIColumn().timestamp()));
+    public void performMapTask(Long key, StudentEvent value, Context context) throws IOException,
+            InterruptedException {
+        StudentEventWritable seWritable = new StudentEventWritable(value, getIColumn().timestamp());
+        context.write(new LongWritable(key), seWritable);
     }
 
 }
