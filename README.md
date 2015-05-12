@@ -1,5 +1,6 @@
 #KassandraMRHelper
 
+[![Build Status](https://travis-ci.org/gneokleo/KassandraMRHelper.svg)](https://travis-ci.org/gneokleo/KassandraMRHelper)
 
 ##Short Summary
 The KassandraMRHelper library provides necessary Record Readers, InputFormats 
