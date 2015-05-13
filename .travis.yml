@@ -1,0 +1,15 @@
+language: java
+
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install libboost-dev libboost-test-dev libboost-program-options-dev libevent-dev automake libtool flex bison pkg-config g++ libssl-dev
+  - wget https://archive.apache.org/dist/thrift/0.7.0/thrift-0.7.0.tar.gz
+  - tar xfz thrift-0.7.0.tar.gz
+  - rm thrift-0.7.0.tar.gz
+  - pushd thrift-0.7.0
+  - sh ./configure --without-c_glib --without-cpp --without-csharp --without-erlang --without-python --without-perl --without-php --without-php_extension --without-ruby --without-haskell --without-go
+  - sudo make install
+  - popd
+ 
+jdk:
+  - oraclejdk8
