@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 
 /**
  * Tests the {@link SSTableColumnMapper} through its test implementation the
@@ -86,6 +87,29 @@ public class SSTableColumnMapperTest {
         assertNull(underTest.getCurrentKey());
         assertNull(underTest.getCurrentColumn());
         underTest.clearKeyVal();
+    }
+
+    /**
+     * Tests to see that null keys and values do not make the mapper fail
+     */
+    @Test
+    public void testMapWithNulls() throws Exception {
+        underTest.map(null, null, null);
+        assertNull(underTest.getCurrentKey());
+        assertNull(underTest.getRowKey());
+        assertNull(underTest.getCurrentColumn());
+
+        ByteBuffer key = ByteBuffer.wrap("testKey".getBytes());
+        underTest.map(key, null, null);
+        assertNull(underTest.getCurrentKey());
+        assertNull(underTest.getRowKey());
+        assertNull(underTest.getCurrentColumn());
+
+        IColumn mockColumn = mock(IColumn.class);
+        underTest.map(null, mockColumn, null);
+        assertNull(underTest.getCurrentKey());
+        assertNull(underTest.getRowKey());
+        assertNull(underTest.getCurrentColumn());
     }
 
     /**
