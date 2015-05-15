@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.org/Knewton/KassandraMRHelper.svg)](https://travis-ci.org/Knewton/KassandraMRHelper)
 [![Coverage Status](https://coveralls.io/repos/Knewton/KassandraMRHelper/badge.svg?branch=master)](https://coveralls.io/r/Knewton/KassandraMRHelper?branch=master)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.knewton.mapreduce/KassandraMRHelper/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.knewton.mapreduce/KassandraMRHelper/)
 
 ##Short Summary
 The KassandraMRHelper library provides necessary Record Readers, InputFormats 
