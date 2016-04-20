@@ -139,6 +139,15 @@ public class SSTableInputFormatTest {
         assertEquals(cfName, conf.get(PropertyConstants.COLUMN_FAMILY_NAME.txt));
     }
 
+    @Test
+    public void testSetKeyspaceName() throws Exception {
+        Job job = Job.getInstance(new Configuration(false));
+        Configuration conf = job.getConfiguration();
+        String keyspaceName = "my_keyspaceName";
+        SSTableInputFormat.setKeyspaceName(keyspaceName, job);
+        assertEquals(keyspaceName, conf.get(PropertyConstants.KEYSPACE_NAME.txt));
+    }
+
     /**
      * Helper method for setting up all the mock files in the FS. Calls list status in the input
      * format and returns the result.
