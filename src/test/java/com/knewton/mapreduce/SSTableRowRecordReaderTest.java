@@ -17,15 +17,17 @@ package com.knewton.mapreduce;
 import com.knewton.mapreduce.constant.PropertyConstants;
 
 import org.apache.cassandra.config.CFMetaData;
+import org.apache.cassandra.db.BufferDecoratedKey;
 import org.apache.cassandra.db.DecoratedKey;
 import org.apache.cassandra.db.marshal.LongType;
 import org.apache.cassandra.dht.IPartitioner;
+import org.apache.cassandra.dht.OrderPreservingPartitioner.StringToken;
 import org.apache.cassandra.dht.RandomPartitioner;
-import org.apache.cassandra.dht.StringToken;
 import org.apache.cassandra.io.sstable.Descriptor;
+import org.apache.cassandra.io.sstable.Descriptor.Type;
+import org.apache.cassandra.io.sstable.ISSTableScanner;
 import org.apache.cassandra.io.sstable.SSTableIdentityIterator;
-import org.apache.cassandra.io.sstable.SSTableReader;
-import org.apache.cassandra.io.sstable.SSTableScanner;
+import org.apache.cassandra.io.sstable.format.SSTableReader;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
@@ -69,7 +71,7 @@ public class SSTableRowRecordReaderTest {
     private SSTableReader ssTableReader;
 
     @Mock
-    private SSTableScanner tableScanner;
+    private ISSTableScanner tableScanner;
 
     @Spy
     private SSTableRowRecordReader ssTableRowRecordReader;
@@ -88,7 +90,7 @@ public class SSTableRowRecordReaderTest {
         Path inputPath = new Path(TABLE_PATH_STR);
         inputSplit = new FileSplit(inputPath, 0, 1, null);
         Descriptor desc = new Descriptor(new File(TABLE_PATH_STR), "keyspace", "columnFamily", 1,
-                                         false);
+                                         Type.FINAL);
 
         doReturn(desc).when(ssTableRowRecordReader).getDescriptor();
 
@@ -99,11 +101,11 @@ public class SSTableRowRecordReaderTest {
             .openSSTableReader(any(IPartitioner.class), any(CFMetaData.class));
 
         when(ssTableReader.estimatedKeys()).thenReturn(1L);
-        when(ssTableReader.getDirectScanner(null)).thenReturn(tableScanner);
+        when(ssTableReader.getScanner()).thenReturn(tableScanner);
 
         when(tableScanner.hasNext()).thenReturn(true, false);
 
-        key = new DecoratedKey(new StringToken("a"), ByteBuffer.wrap("b".getBytes()));
+        key = new BufferDecoratedKey(new StringToken("a"), ByteBuffer.wrap("b".getBytes()));
 
         row = mock(SSTableIdentityIterator.class);
         when(row.getKey()).thenReturn(key);
@@ -129,7 +131,7 @@ public class SSTableRowRecordReaderTest {
 
         assertEquals(0, ssTableRowRecordReader.getProgress(), 0);
         assertTrue(ssTableRowRecordReader.nextKeyValue());
-        assertEquals(key.key, ssTableRowRecordReader.getCurrentKey());
+        assertEquals(key.getKey(), ssTableRowRecordReader.getCurrentKey());
         assertEquals(row, ssTableRowRecordReader.getCurrentValue());
 
         assertEquals(1, ssTableRowRecordReader.getProgress(), 0);

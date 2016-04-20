@@ -14,33 +14,33 @@
  */
 package com.knewton.mapreduce;
 
-import org.apache.cassandra.db.IColumn;
+import org.apache.cassandra.db.Cell;
 import org.apache.hadoop.io.Text;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public class DoNothingColumnMapper extends SSTableColumnMapper<ByteBuffer, IColumn, Text, Text> {
+public class DoNothingColumnMapper extends SSTableCellMapper<ByteBuffer, Cell, Text, Text> {
 
     private ByteBuffer currentKey;
-    private IColumn currentColumn;
+    private Cell currentColumn;
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void performMapTask(ByteBuffer key, IColumn column, Context context) throws IOException,
-            InterruptedException {
+    public void performMapTask(ByteBuffer key, Cell column, Context context)
+            throws IOException, InterruptedException {
         this.setCurrentKey(key);
-        this.setCurrentColumn(column);
+        this.setCurrentCell(column);
 
     }
 
-    public IColumn getCurrentColumn() {
+    public Cell getCurrentCell() {
         return currentColumn;
     }
 
-    public void setCurrentColumn(IColumn currentColumn) {
+    public void setCurrentCell(Cell currentColumn) {
         this.currentColumn = currentColumn;
     }
 
@@ -69,7 +69,7 @@ public class DoNothingColumnMapper extends SSTableColumnMapper<ByteBuffer, IColu
      * {@inheritDoc}
      */
     @Override
-    public IColumn getMapperValue(IColumn value, Context context) {
+    public Cell getMapperValue(Cell value, Context context) {
         return value;
     }
 

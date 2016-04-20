@@ -22,8 +22,9 @@ import org.apache.cassandra.db.marshal.LongType;
 import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.dht.RandomPartitioner;
 import org.apache.cassandra.io.sstable.Descriptor;
-import org.apache.cassandra.io.sstable.SSTableReader;
-import org.apache.cassandra.io.sstable.SSTableScanner;
+import org.apache.cassandra.io.sstable.Descriptor.Type;
+import org.apache.cassandra.io.sstable.ISSTableScanner;
+import org.apache.cassandra.io.sstable.format.SSTableReader;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.Job;
@@ -48,7 +49,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Tests {@link SSTableRecordReader}
+ * Tests {@link SSTableRecordReader}.
  *
  * @author Giannis Neokleous
  *
@@ -61,7 +62,7 @@ public class SSTableRecordReaderTest {
     private SSTableReader ssTableReader;
 
     @Mock
-    private SSTableScanner tableScanner;
+    private ISSTableScanner tableScanner;
 
     @Spy
     private SSTableColumnRecordReader ssTableColumnRecordReader;
@@ -82,7 +83,7 @@ public class SSTableRecordReaderTest {
         Path inputPath = new Path(TABLE_PATH_STR);
         inputSplit = new FileSplit(inputPath, 0, 1, null);
         Descriptor desc = new Descriptor(new File(TABLE_PATH_STR), "keyspace", "columnFamily", 1,
-                                         false);
+                                         Type.FINAL);
 
         doReturn(desc).when(ssTableColumnRecordReader).getDescriptor();
         doReturn(desc).when(ssTableRowRecordReader).getDescriptor();
@@ -96,7 +97,7 @@ public class SSTableRecordReaderTest {
             .openSSTableReader(any(IPartitioner.class), any(CFMetaData.class));
         doReturn(ssTableReader).when(ssTableRowRecordReader)
             .openSSTableReader(any(IPartitioner.class), any(CFMetaData.class));
-        when(ssTableReader.getDirectScanner(null)).thenReturn(tableScanner);
+        when(ssTableReader.getScanner()).thenReturn(tableScanner);
     }
 
     private TaskAttemptContext getTaskAttemptContext(boolean setColumnComparator,

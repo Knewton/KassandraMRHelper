@@ -25,8 +25,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
- * Input format that instantiates an sstable column record reader.
+ * Input format that instantiates an sstable cell record reader.
  *
+ * @author Giannis Neokleous
  */
 public class SSTableColumnInputFormat extends SSTableInputFormat<ByteBuffer, OnDiskAtom> {
 

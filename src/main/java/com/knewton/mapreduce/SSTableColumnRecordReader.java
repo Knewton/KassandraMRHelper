@@ -22,7 +22,9 @@ import java.nio.ByteBuffer;
 
 /**
  * Record reader for sstables that calls map with the key being the sstable row key and the value a
- * single column.
+ * single disk atom.
+ *
+ * @author Giannis Neokleous
  *
  */
 public class SSTableColumnRecordReader extends SSTableRecordReader<ByteBuffer, OnDiskAtom> {
@@ -39,7 +41,7 @@ public class SSTableColumnRecordReader extends SSTableRecordReader<ByteBuffer, O
         // Read until there's a row with columns
         while ((row == null || !row.hasNext()) && tableScanner.hasNext()) {
             row = (SSTableIdentityIterator) tableScanner.next();
-            currentKey = row.getKey().key;
+            currentKey = row.getKey().getKey();
             incKeysRead(1);
         }
         if (row != null && row.hasNext()) {

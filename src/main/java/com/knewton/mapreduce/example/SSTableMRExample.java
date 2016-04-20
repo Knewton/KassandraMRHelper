@@ -102,6 +102,7 @@ public class SSTableMRExample {
         SSTableInputFormat.setPartitionerClass(RandomPartitioner.class.getName(), job);
         SSTableInputFormat.setComparatorClass(LongType.class.getName(), job);
         SSTableInputFormat.setColumnFamilyName("StudentEvents", job);
+        SSTableInputFormat.setKeyspaceName("demoKeyspace", job);
 
         if (cli.hasOption('s')) {
             conf.set(PropertyConstants.START_DATE.txt, cli.getOptionValue('s'));
