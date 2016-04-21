@@ -38,6 +38,7 @@ import org.apache.cassandra.io.sstable.SSTableIdentityIterator;
 import org.apache.cassandra.io.sstable.format.SSTableReader;
 import org.apache.cassandra.utils.CounterId;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
@@ -101,8 +102,10 @@ public class SSTableColumnRecordReaderTest {
 
         doReturn(desc).when(ssTableColumnRecordReader).getDescriptor();
 
-        doNothing().when(ssTableColumnRecordReader).copyTablesToLocal(any(FileSplit.class),
-                                                                     any(TaskAttemptContext.class));
+        doNothing().when(ssTableColumnRecordReader).copyTablesToLocal(any(FileSystem.class),
+                                                                      any(FileSystem.class),
+                                                                      any(Path.class),
+                                                                      any(TaskAttemptContext.class));
 
         doReturn(ssTableReader).when(ssTableColumnRecordReader)
             .openSSTableReader(any(IPartitioner.class), any(CFMetaData.class));
@@ -143,9 +146,12 @@ public class SSTableColumnRecordReaderTest {
 
     @Test
     public void testNextKeyValue() throws Exception {
+        Path inputPath = inputSplit.getPath();
+        FileSystem remoteFS = FileSystem.get(inputPath.toUri(), conf);
+        FileSystem localFS = FileSystem.getLocal(conf);
         TaskAttemptContext context = getTaskAttemptContext();
         ssTableColumnRecordReader.initialize(inputSplit, context);
-        verify(ssTableColumnRecordReader).copyTablesToLocal(inputSplit, context);
+        verify(ssTableColumnRecordReader).copyTablesToLocal(remoteFS, localFS, inputPath, context);
 
         assertEquals(0, ssTableColumnRecordReader.getProgress(), 0);
         assertTrue(ssTableColumnRecordReader.nextKeyValue());
