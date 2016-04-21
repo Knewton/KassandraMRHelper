@@ -14,10 +14,15 @@
  */
 package com.knewton.mapreduce.util;
 
-import org.apache.cassandra.db.IColumn;
-import org.apache.cassandra.db.SuperColumn;
+import org.apache.cassandra.db.ColumnFamilyType;
 import org.apache.cassandra.io.sstable.SSTableIdentityIterator;
 
+/**
+ * Contains utility methods for cassandra columns and cells
+ *
+ * @author Giannis Neokleous
+ *
+ */
 public class CassandraColumnUtils {
 
     /**
@@ -27,20 +32,7 @@ public class CassandraColumnUtils {
      * @return True if row contains super columns false otherwise.
      */
     public static boolean isSuperColumn(SSTableIdentityIterator row) {
-        return row.getColumnFamily().isSuper();
-    }
-
-    /**
-     * Helper method for figuring out if a column is an instance of a <code>SuperColumn</code>
-     *
-     * @param column
-     * @return True if super column false otherwise.
-     */
-    public static boolean isSuperColumn(IColumn column) {
-        if (column instanceof SuperColumn) {
-            return true;
-        }
-        return false;
+        return row.getColumnFamily().getType() == ColumnFamilyType.Super;
     }
 
 }

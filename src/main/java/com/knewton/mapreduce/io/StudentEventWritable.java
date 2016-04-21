@@ -32,6 +32,8 @@ import java.util.Comparator;
 /**
  * Wrapper class for StudentEvents that is Hadoop writable so that it can be used in the reducer.
  *
+ * @author Giannis Neokleous
+ *
  */
 public class StudentEventWritable implements Writable, Cloneable {
 

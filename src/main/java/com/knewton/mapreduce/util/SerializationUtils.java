@@ -28,7 +28,7 @@ public class SerializationUtils {
     public static final Class<Factory> SERIALIZATION_FACTORY_PARAMETER_DEFAULT =
         TCompactProtocol.Factory.class;
 
-    public static TDeserializer getDeserializerFromContext(Configuration conf) {
+    public static TDeserializer getDeserializerFromConf(Configuration conf) {
         Class<? extends TProtocolFactory> protocolFactoryClass =
             conf.getClass(PropertyConstants.SERIALIZATION_FACTORY_PARAMETER.txt,
                           SERIALIZATION_FACTORY_PARAMETER_DEFAULT, TProtocolFactory.class);

@@ -27,6 +27,8 @@ import java.nio.ByteBuffer;
 /**
  * Input format that instantiates an sstable row record reader.
  *
+ * @author Giannis Neokleous
+ *
  */
 public class SSTableRowInputFormat extends SSTableInputFormat<ByteBuffer,
         SSTableIdentityIterator> {

@@ -29,11 +29,11 @@ public class SerializationUtilsTest {
      * Test if a deserializer can be instantiated correctly from a Hadoop conf property.
      */
     @Test
-    public void testGetDeserializerFromContext() throws Exception {
+    public void testGetDeserializerFromConf() throws Exception {
         Configuration conf = new Configuration(false);
         conf.set(PropertyConstants.SERIALIZATION_FACTORY_PARAMETER.txt,
                  TCompactProtocol.Factory.class.getName());
-        TDeserializer deserializer = SerializationUtils.getDeserializerFromContext(conf);
+        TDeserializer deserializer = SerializationUtils.getDeserializerFromConf(conf);
         assertNotNull(deserializer);
     }
 

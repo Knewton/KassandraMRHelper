@@ -17,16 +17,26 @@ package com.knewton.mapreduce;
 import com.knewton.mapreduce.constant.PropertyConstants;
 
 import org.apache.cassandra.config.CFMetaData;
-import org.apache.cassandra.db.CounterColumn;
+import org.apache.cassandra.db.BufferCounterCell;
+import org.apache.cassandra.db.BufferDecoratedKey;
+import org.apache.cassandra.db.ColumnSerializer.Flag;
+import org.apache.cassandra.db.CounterCell;
 import org.apache.cassandra.db.DecoratedKey;
+import org.apache.cassandra.db.composites.CellName;
+import org.apache.cassandra.db.composites.CellNameType;
+import org.apache.cassandra.db.composites.SimpleDenseCellNameType;
+import org.apache.cassandra.db.context.CounterContext;
+import org.apache.cassandra.db.marshal.BytesType;
 import org.apache.cassandra.db.marshal.LongType;
 import org.apache.cassandra.dht.IPartitioner;
+import org.apache.cassandra.dht.OrderPreservingPartitioner.StringToken;
 import org.apache.cassandra.dht.RandomPartitioner;
-import org.apache.cassandra.dht.StringToken;
 import org.apache.cassandra.io.sstable.Descriptor;
+import org.apache.cassandra.io.sstable.Descriptor.Type;
+import org.apache.cassandra.io.sstable.ISSTableScanner;
 import org.apache.cassandra.io.sstable.SSTableIdentityIterator;
-import org.apache.cassandra.io.sstable.SSTableReader;
-import org.apache.cassandra.io.sstable.SSTableScanner;
+import org.apache.cassandra.io.sstable.format.SSTableReader;
+import org.apache.cassandra.utils.CounterId;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
@@ -63,20 +73,19 @@ import static org.mockito.Mockito.when;
  */
 @RunWith(MockitoJUnitRunner.class)
 public class SSTableColumnRecordReaderTest {
-
     private static final String TABLE_PATH_STR = "keyspace/columnFamily";
 
     @Mock
     private SSTableReader ssTableReader;
 
     @Mock
-    private SSTableScanner tableScanner;
+    private ISSTableScanner tableScanner;
 
     @Spy
     private SSTableColumnRecordReader ssTableColumnRecordReader;
 
     private DecoratedKey key;
-    private CounterColumn value;
+    private CounterCell value;
     private FileSplit inputSplit;
     private TaskAttemptID attemptId;
     private Configuration conf;
@@ -88,7 +97,7 @@ public class SSTableColumnRecordReaderTest {
         Path inputPath = new Path(TABLE_PATH_STR);
         inputSplit = new FileSplit(inputPath, 0, 1, null);
         Descriptor desc = new Descriptor(new File(TABLE_PATH_STR), "keyspace", "columnFamily", 1,
-                                         false);
+                                         Type.FINAL);
 
         doReturn(desc).when(ssTableColumnRecordReader).getDescriptor();
 
@@ -99,12 +108,17 @@ public class SSTableColumnRecordReaderTest {
             .openSSTableReader(any(IPartitioner.class), any(CFMetaData.class));
 
         when(ssTableReader.estimatedKeys()).thenReturn(2L);
-        when(ssTableReader.getDirectScanner(null)).thenReturn(tableScanner);
+        when(ssTableReader.getScanner()).thenReturn(tableScanner);
 
         when(tableScanner.hasNext()).thenReturn(true, true, false);
 
-        key = new DecoratedKey(new StringToken("a"), ByteBuffer.wrap("b".getBytes()));
-        value = new CounterColumn(ByteBuffer.wrap("name".getBytes()), 1L, 0L);
+        key = new BufferDecoratedKey(new StringToken("a"), ByteBuffer.wrap("b".getBytes()));
+        CellNameType simpleDenseCellType = new SimpleDenseCellNameType(BytesType.instance);
+        CellName cellName = simpleDenseCellType.cellFromByteBuffer(ByteBuffer.wrap("n".getBytes()));
+        ByteBuffer counterBB = CounterContext.instance()
+            .createGlobal(CounterId.fromInt(0), System.currentTimeMillis(), 123L);
+        value = BufferCounterCell.create(cellName, counterBB, System.currentTimeMillis(), 0L,
+                                         Flag.PRESERVE_SIZE);
 
         SSTableIdentityIterator row1 = getNewRow();
         SSTableIdentityIterator row2 = getNewRow();
@@ -135,12 +149,12 @@ public class SSTableColumnRecordReaderTest {
 
         assertEquals(0, ssTableColumnRecordReader.getProgress(), 0);
         assertTrue(ssTableColumnRecordReader.nextKeyValue());
-        assertEquals(key.key, ssTableColumnRecordReader.getCurrentKey());
+        assertEquals(key.getKey(), ssTableColumnRecordReader.getCurrentKey());
         assertEquals(value, ssTableColumnRecordReader.getCurrentValue());
 
         assertEquals(0.5, ssTableColumnRecordReader.getProgress(), 0);
         assertTrue(ssTableColumnRecordReader.nextKeyValue());
-        assertEquals(key.key, ssTableColumnRecordReader.getCurrentKey());
+        assertEquals(key.getKey(), ssTableColumnRecordReader.getCurrentKey());
         assertEquals(value, ssTableColumnRecordReader.getCurrentValue());
 
         assertEquals(1, ssTableColumnRecordReader.getProgress(), 0);

@@ -3,6 +3,14 @@ package com.knewton.mapreduce.constant;
 public enum PropertyConstants {
 
     /**
+     * The Keyspace Name for a data run
+     */
+    KEYSPACE_NAME("com.knewton.inputformat.cassandra.keyspace"),
+    /**
+     * Column family type needs to be set if the column family type is Super.
+     */
+    COLUMN_FAMILY_TYPE("com.knewton.cassandra.cftype"),
+    /**
      * Comparator class name for columns.
      */
     COLUMN_COMPARATOR("com.knewton.cassandra.column.comparator"),
@@ -11,13 +19,13 @@ public enum PropertyConstants {
      */
     COLUMN_SUBCOMPARATOR("com.knewton.cassandra.column.subcomparator"),
     /**
-     * Column family type needs to be set if the column family type is Super.
-     */
-    COLUMN_FAMILY_TYPE("com.knewton.cassandra.cftype"),
-    /**
      * Partitioner for decorating keys.
      */
     PARTITIONER("com.knewton.partitioner"),
+    /**
+     * True if the columns are sparse, false if they're dense.
+     */
+    SPARSE_COLUMN("com.knewton.column.sparse"),
     /**
      * Boolean variable. Set true if compression enabled.
      */
@@ -31,10 +39,6 @@ public enum PropertyConstants {
      */
     START_DATE("com.knewton.studentevents.date.start"),
     END_DATE("com.knewton.studentevents.date.end"),
-    /**
-     * Boolean variable. Set true to ignore student test UUID's
-     */
-    IGNORE_TEST_UUIDS("com.knewton.studentevents.ignore_test_uuids"),
     /**
      * The Column Family Name for a data run
      */

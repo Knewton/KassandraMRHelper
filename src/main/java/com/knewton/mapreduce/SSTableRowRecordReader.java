@@ -22,6 +22,8 @@ import java.nio.ByteBuffer;
 /**
  * Abstract mapper class that takes in a row key as its key and a column as its value.
  *
+ * @author Giannis Neokleous
+ *
  */
 public class SSTableRowRecordReader extends SSTableRecordReader<ByteBuffer,
         SSTableIdentityIterator> {
@@ -35,7 +37,7 @@ public class SSTableRowRecordReader extends SSTableRecordReader<ByteBuffer,
     public boolean nextKeyValue() throws IOException, InterruptedException {
         if (tableScanner.hasNext()) {
             SSTableIdentityIterator row = (SSTableIdentityIterator) tableScanner.next();
-            currentKey = row.getKey().key;
+            currentKey = row.getKey().getKey();
             currentValue = row;
             incKeysRead(1);
             return true;

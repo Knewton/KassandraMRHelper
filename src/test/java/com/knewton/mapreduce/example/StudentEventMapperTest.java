@@ -18,8 +18,11 @@ import com.knewton.mapreduce.constant.PropertyConstants;
 import com.knewton.mapreduce.io.StudentEventWritable;
 import com.knewton.mapreduce.util.RandomStudentEventGenerator;
 
-import org.apache.cassandra.db.Column;
-import org.apache.cassandra.db.IColumn;
+import org.apache.cassandra.db.BufferCell;
+import org.apache.cassandra.db.Cell;
+import org.apache.cassandra.db.composites.CellName;
+import org.apache.cassandra.db.composites.SimpleDenseCellNameType;
+import org.apache.cassandra.db.marshal.BytesType;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
@@ -57,6 +60,8 @@ public class StudentEventMapperTest {
 
     private Configuration conf;
 
+    private SimpleDenseCellNameType simpleDenseCellType;
+
     @Before
     public void setUp() throws Exception {
         underTest = new StudentEventMapper();
@@ -64,6 +69,7 @@ public class StudentEventMapperTest {
         Counter mockCounter = mock(Counter.class);
         when(mockedContext.getConfiguration()).thenReturn(conf);
         when(mockedContext.getCounter(anyString(), anyString())).thenReturn(mockCounter);
+        this.simpleDenseCellType = new SimpleDenseCellNameType(BytesType.instance);
     }
 
     /**
@@ -84,8 +90,9 @@ public class StudentEventMapperTest {
         ByteBuffer columnName = ByteBuffer.wrap(new byte[8]);
         columnName.putLong(eventId);
         columnName.rewind();
-        IColumn column = new Column(columnName,
-                                    ByteBuffer.wrap(Hex.decodeHex(eventDataString.toCharArray())));
+        CellName cellName = simpleDenseCellType.cellFromByteBuffer(columnName);
+        Cell column = new BufferCell(cellName,
+                                     ByteBuffer.wrap(Hex.decodeHex(eventDataString.toCharArray())));
 
         underTest.map(randomKey, column, mockedContext);
         verify(mockedContext, never()).write(any(LongWritable.class),
@@ -100,12 +107,12 @@ public class StudentEventMapperTest {
         columnName = ByteBuffer.wrap(new byte[8]);
         columnName.putLong(eventId);
         columnName.rewind();
-        column = new Column(columnName,
-                            ByteBuffer.wrap(Hex.decodeHex(eventDataString.toCharArray())));
+        cellName = simpleDenseCellType.cellFromByteBuffer(columnName);
+        column = new BufferCell(cellName,
+                                ByteBuffer.wrap(Hex.decodeHex(eventDataString.toCharArray())));
         randomKey = RandomStudentEventGenerator.getRandomIdBuffer();
         underTest.map(randomKey, column, mockedContext);
-        verify(mockedContext).write(any(LongWritable.class),
-                                    any(StudentEventWritable.class));
+        verify(mockedContext).write(any(LongWritable.class), any(StudentEventWritable.class));
     }
 
     /**
@@ -125,8 +132,9 @@ public class StudentEventMapperTest {
         ByteBuffer columnName = ByteBuffer.wrap(new byte[8]);
         columnName.putLong(eventId);
         columnName.rewind();
-        IColumn column = new Column(columnName,
-                                    ByteBuffer.wrap(Hex.decodeHex(eventDataString.toCharArray())));
+        CellName cellName = simpleDenseCellType.cellFromByteBuffer(columnName);
+        Cell column = new BufferCell(cellName,
+                                     ByteBuffer.wrap(Hex.decodeHex(eventDataString.toCharArray())));
         underTest.map(randomKey, column, mockedContext);
         verify(mockedContext, never()).write(any(LongWritable.class),
                                              any(StudentEventWritable.class));
@@ -140,8 +148,9 @@ public class StudentEventMapperTest {
         columnName = ByteBuffer.wrap(new byte[8]);
         columnName.putLong(eventId);
         columnName.rewind();
-        column = new Column(columnName,
-                            ByteBuffer.wrap(Hex.decodeHex(eventDataString.toCharArray())));
+        cellName = simpleDenseCellType.cellFromByteBuffer(columnName);
+        column = new BufferCell(cellName,
+                                ByteBuffer.wrap(Hex.decodeHex(eventDataString.toCharArray())));
         underTest.map(randomKey, column, mockedContext);
         verify(mockedContext).write(any(LongWritable.class),
                                     any(StudentEventWritable.class));

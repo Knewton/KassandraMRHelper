@@ -14,20 +14,19 @@
  */
 package com.knewton.mapreduce.example;
 
-import com.knewton.mapreduce.SSTableColumnMapper;
+import com.knewton.mapreduce.SSTableCellMapper;
 import com.knewton.mapreduce.constant.PropertyConstants;
 import com.knewton.mapreduce.util.CounterConstants;
+import com.knewton.mapreduce.util.SerializationUtils;
 import com.knewton.thrift.StudentEvent;
 import com.knewton.thrift.StudentEventData;
 
-import org.apache.cassandra.db.IColumn;
+import org.apache.cassandra.db.Cell;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.thrift.TDeserializer;
 import org.apache.thrift.TException;
-import org.apache.thrift.protocol.TCompactProtocol;
-import org.apache.thrift.protocol.TProtocolFactory;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Interval;
@@ -42,16 +41,20 @@ import java.nio.ByteBuffer;
 import javax.annotation.Nullable;
 
 /**
- * Abstract mapper that converts a cassandra column to a student event and a cassandra row key to a
+ * Abstract mapper that converts a cassandra cell to a student event and a cassandra row key to a
  * student id.
  *
+ * @author Giannis Neokleous
+ *
  * @param <K>
+ *            The outgoing key type
  * @param <V>
+ *            The outgoing value type
  */
 public abstract class StudentEventAbstractMapper<K extends WritableComparable<?>, V extends Writable>
-        extends SSTableColumnMapper<Long, StudentEvent, K, V> {
+        extends SSTableCellMapper<Long, StudentEvent, K, V> {
 
-    private final TDeserializer decoder;
+    private TDeserializer decoder;
     private Interval timeRange;
     private static final Logger LOG = LoggerFactory.getLogger(StudentEventAbstractMapper.class);
 
@@ -60,15 +63,8 @@ public abstract class StudentEventAbstractMapper<K extends WritableComparable<?>
      */
     public static final String DATE_TIME_STRING_FORMAT = "yyyy'-'MM'-'dd'T'HH':'mm':'ss.SSSZ";
 
-    /**
-     * Helper constant for avoiding date time overflows.
-     */
-    public static final long ONE_DAY_IN_MILLIS = 86400000L;
-
     public StudentEventAbstractMapper() {
-        TProtocolFactory factory = new TCompactProtocol.Factory();
-        decoder = new TDeserializer(factory);
-        setSkipDeletedColumns(true);
+        setSkipDeletedAtoms(true);
     }
 
     /**
@@ -77,12 +73,15 @@ public abstract class StudentEventAbstractMapper<K extends WritableComparable<?>
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
+        this.decoder = SerializationUtils.getDeserializerFromConf(context.getConfiguration());
         setupTimeRange(context.getConfiguration());
     }
 
     /**
-     * @param key
-     * @param context
+     * Gets the key
+     *
+     * @param key Key bytes
+     * @param context The context
      * @return Get the student id from the row key.
      */
     @Override
@@ -93,34 +92,36 @@ public abstract class StudentEventAbstractMapper<K extends WritableComparable<?>
     }
 
     /**
-     * @param iColumn
-     * @param context
-     * @return Get a student event out of a cassandra column.
+     * Gets the student event value
+     *
+     * @param atom The atom to get the value from
+     * @param context The context
+     * @return Get a student event out of a cassandra atom.
      */
     @Override
-    protected StudentEvent getMapperValue(IColumn iColumn, Context context) {
-        return getStudentEvent(iColumn, context);
+    protected StudentEvent getMapperValue(Cell atom, Context context) {
+        return getStudentEvent(atom, context);
     }
 
     /**
-     * Make a student event out of a column in cassandra.
+     * Make a student event out of a cell in cassandra.
      *
      * @param value
      * @param context
      * @return
      */
     @Nullable
-    private StudentEvent getStudentEvent(IColumn value, Context context) {
+    private StudentEvent getStudentEvent(Cell value, Context context) {
         context.getCounter(CounterConstants.STUDENT_EVENTS_JOB,
                 CounterConstants.STUDENT_EVENTS_COUNT).increment(1);
-        ByteBuffer columnNameDup = value.name().slice();
-        ByteBuffer columnValueDup = value.value().slice();
-        long eventId = columnNameDup.getLong();
+        ByteBuffer cellNameDup = value.name().toByteBuffer().slice();
+        ByteBuffer cellValueDup = value.value().slice();
+        long eventId = cellNameDup.getLong();
         if (!isInTimeRange(eventId, context)) {
             return null;
         }
-        byte[] data = new byte[columnValueDup.remaining()];
-        columnValueDup.get(data);
+        byte[] data = new byte[cellValueDup.remaining()];
+        cellValueDup.get(data);
         StudentEvent studentEvent = new StudentEvent();
         StudentEventData studentEventData = new StudentEventData();
         try {
@@ -144,7 +145,7 @@ public abstract class StudentEventAbstractMapper<K extends WritableComparable<?>
      * @return True if the event is in the configured time interval
      */
     private boolean isInTimeRange(long eventId, Context context) {
-        DateTime eventTime = new DateTime(eventId).withZone(DateTimeZone.UTC);
+        DateTime eventTime = new DateTime(eventId, DateTimeZone.UTC);
         // Skip events outside of the desired time range.
         if (timeRange != null && !timeRange.contains(eventTime)) {
             context.getCounter(CounterConstants.STUDENT_EVENTS_JOB,
@@ -171,13 +172,13 @@ public abstract class StudentEventAbstractMapper<K extends WritableComparable<?>
         if (startDateStr != null) {
             startDate = dtf.parseDateTime(startDateStr);
         } else {
-            startDate = new DateTime(Long.MIN_VALUE + ONE_DAY_IN_MILLIS).withZone(DateTimeZone.UTC);
+            startDate = new DateTime(0).year().withMinimumValue().withZone(DateTimeZone.UTC);
         }
         DateTime endDate;
         if (endDateStr != null) {
             endDate = dtf.parseDateTime(endDateStr);
         } else {
-            endDate = new DateTime(Long.MAX_VALUE - ONE_DAY_IN_MILLIS).withZone(DateTimeZone.UTC);
+            endDate = new DateTime(0).withZone(DateTimeZone.UTC).year().withMaximumValue();
         }
         this.timeRange = new Interval(startDate, endDate);
     }

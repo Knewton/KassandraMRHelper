@@ -1,6 +1,3 @@
-*.class
-target
-
 # Package Files #
 *.jar
 *.war
@@ -10,3 +7,8 @@ target
 .classpath
 .project
 .settings
+
+# Compiled code #
+*.class
+target
+src/main/java/com/knewton/thrift/

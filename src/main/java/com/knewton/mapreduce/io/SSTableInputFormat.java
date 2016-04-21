@@ -15,11 +15,12 @@
 package com.knewton.mapreduce.io;
 
 import com.knewton.mapreduce.constant.PropertyConstants;
-import com.knewton.mapreduce.io.sstable.BackwardsCompatibleDescriptor;
 
 import com.google.common.collect.Lists;
 
-import org.apache.cassandra.io.sstable.SSTable;
+import org.apache.cassandra.io.sstable.Component;
+import org.apache.cassandra.io.sstable.Descriptor;
+import org.apache.cassandra.utils.Pair;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -31,6 +32,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
@@ -132,7 +134,8 @@ public abstract class SSTableInputFormat<K, V> extends FileInputFormat<K, V> {
      */
     private DataTablePathFilter getDataTableFilter(Configuration conf) {
         String operatingCF = conf.get(PropertyConstants.COLUMN_FAMILY_NAME.txt);
-        return new DataTablePathFilter(operatingCF);
+        String operatingKeyspace = conf.get(PropertyConstants.KEYSPACE_NAME.txt);
+        return new DataTablePathFilter(operatingCF, operatingKeyspace);
     }
 
     /**
@@ -172,6 +175,18 @@ public abstract class SSTableInputFormat<K, V> extends FileInputFormat<K, V> {
     }
 
     /**
+     * Sets the sparse column property
+     *
+     * @param value
+     *            The value of the property
+     * @param job
+     *            The current job
+     */
+    public static void setIsSparse(boolean value, Job job) {
+        job.getConfiguration().setBoolean(PropertyConstants.SPARSE_COLUMN.txt, value);
+    }
+
+    /**
      * Column family type needs to be set if the column family type is Super.
      *
      * @param value
@@ -184,7 +199,7 @@ public abstract class SSTableInputFormat<K, V> extends FileInputFormat<K, V> {
     }
 
     /**
-     * Set the name of the column family to read. This is optional. If not set all the datatables
+     * Set the name of the column family to read. This is optional. If not set all the data tables
      * under the given input directory will be collected and processed.
      *
      * @param value
@@ -197,20 +212,37 @@ public abstract class SSTableInputFormat<K, V> extends FileInputFormat<K, V> {
     }
 
     /**
-     * Custom path filter for SSTables.
+     * Set the name of the keyspace to read. This is optional. If not set all the data tables
+     * under the given input directory will be collected and processed.
      *
+     * @param value
+     *            The value of the property
+     * @param job
+     *            The current job
+     */
+    public static void setKeyspaceName(String value, Job job) {
+        job.getConfiguration().set(PropertyConstants.KEYSPACE_NAME.txt, value);
+    }
+
+    /**
+     * Custom path filter for SSTables.
      */
     public static class DataTablePathFilter implements PathFilter {
 
         @Nullable
         private String operatingCF;
 
-        public DataTablePathFilter(@Nullable String operatingCF) {
+        @Nullable
+        private String operatingKeyspace;
+
+        public DataTablePathFilter(@Nullable String operatingCF,
+                @Nullable String operatingKeyspace) {
             this.operatingCF = operatingCF;
+            this.operatingKeyspace = operatingKeyspace;
         }
 
         public DataTablePathFilter() {
-            this(null);
+            this(null, null);
         }
 
         /**
@@ -218,18 +250,32 @@ public abstract class SSTableInputFormat<K, V> extends FileInputFormat<K, V> {
          */
         @Override
         public boolean accept(Path path) {
-            // ignore if 1) path is null, 2) it's not a data file or 3) if it's a temporary file.
-            if (path == null || !path.getName().endsWith(SSTable.COMPONENT_DATA)
-                    || BackwardsCompatibleDescriptor.fromFilename(path.toString()).temporary) {
+            if (path == null) {
                 return false;
-            } else if (operatingCF == null) {
-                return true;
+            }
+
+            // Try and get the component and the descriptor from the filename
+            Descriptor desc;
+            Component component;
+            try {
+                File parentFile = new File(path.getParent().toString());
+                Pair<Descriptor, Component> descCompPair = Component.fromFilename(parentFile,
+                                                                                  path.getName());
+                desc = descCompPair.left;
+                component = descCompPair.right;
+
+            } catch (RuntimeException e) {
+                return false;
+            }
+
+            if (component != Component.DATA || desc.type.isTemporary) {
+                return false;
             } else {
-                return BackwardsCompatibleDescriptor.fromFilename(path.toString()).cfname
-                        .equals(operatingCF);
+                // these parameters are allowed to be null, but if set, we must match
+                return (operatingCF == null || desc.cfname.equals(operatingCF)) &&
+                        (operatingKeyspace == null || desc.ksname.equals(operatingKeyspace));
             }
         }
-
     }
 
 }

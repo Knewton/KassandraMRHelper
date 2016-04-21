@@ -22,15 +22,15 @@ import org.apache.hadoop.io.LongWritable;
 import java.io.IOException;
 
 public class StudentEventMapper extends StudentEventAbstractMapper<LongWritable,
-        StudentEventWritable> {
+                                                                   StudentEventWritable> {
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void performMapTask(Long key, StudentEvent value, Context context) throws IOException,
-            InterruptedException {
-        StudentEventWritable seWritable = new StudentEventWritable(value, getIColumn().timestamp());
+    public void performMapTask(Long key, StudentEvent value, Context context)
+            throws IOException, InterruptedException {
+        StudentEventWritable seWritable = new StudentEventWritable(value, getValue().timestamp());
         context.write(new LongWritable(key), seWritable);
     }
 
