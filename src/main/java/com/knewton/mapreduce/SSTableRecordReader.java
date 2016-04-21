@@ -89,8 +89,6 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
     private Set<Component> components;
     private Descriptor desc;
     private long estimatedKeys;
-    private long minTimestampMs = Long.MIN_VALUE;
-    private long maxTimestampMs = Long.MAX_VALUE;
     private Configuration conf;
     private TaskAttemptContext ctx;
 
@@ -156,13 +154,16 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
 
         // Get comparator. Subcomparator can be null.
         AbstractType<?> comparator = getConfComparator(conf);
-        AbstractType<?> subcomparator = getConfComparator(conf);
+        AbstractType<?> subcomparator = getConfSubComparator(conf);
 
         // Get partitioner for keys
         IPartitioner partitioner = getConfPartitioner(conf);
 
         // Move minimum required db tables to local disk.
-        copyTablesToLocal(split, context);
+        Path dataTablePath = split.getPath();
+        FileSystem remoteFS = FileSystem.get(dataTablePath.toUri(), conf);
+        FileSystem localFS = FileSystem.getLocal(conf);
+        copyTablesToLocal(remoteFS, localFS, dataTablePath, context);
         CFMetaData cfMetaData;
         if (getConfIsSparse(conf)) {
             cfMetaData = CFMetaData.sparseCFMetaData(getDescriptor().ksname, getDescriptor().cfname,
@@ -200,30 +201,14 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
     }
 
     /**
-     * Keep track of the min and max timestamps in milliseconds NOTE: Cassandra timestamps are
-     * usually given in microseconds Presume that the input is in microseconds and divide to get
-     * milliseconds
-     */
-    protected void updateTimeInterval(long timestamp) {
-        long checkTimestamp = timestamp / 1000L;
-        if ((minTimestampMs > checkTimestamp) || (minTimestampMs == Long.MIN_VALUE)) {
-            minTimestampMs = checkTimestamp;
-        }
-        if ((maxTimestampMs < checkTimestamp) || (maxTimestampMs == Long.MAX_VALUE)) {
-            maxTimestampMs = checkTimestamp;
-        }
-    }
-
-    /**
      * Moves all the minimum required tables for the table reader to work to local disk.
      *
      * @param split The table to work on.
      */
     @VisibleForTesting
-    void copyTablesToLocal(FileSplit split, TaskAttemptContext context) throws IOException {
-        Path dataTablePath = split.getPath();
+    void copyTablesToLocal(FileSystem remoteFS, FileSystem localFS, Path dataTablePath,
+                           TaskAttemptContext context) throws IOException {
         Configuration conf = context.getConfiguration();
-        FileSystem fs = FileSystem.get(dataTablePath.toUri(), conf);
         String hdfsDataTablePathStr = dataTablePath.toUri().getPath();
         String localDataTablePathStr = dataTablePath.toUri().getHost() +
                                       File.separator + dataTablePath.toUri().getPath();
@@ -232,14 +217,13 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
             String mapTaskId = conf.get("mapreduce.task.attempt.id");
             String mapTempDir = conf.get("mapreduce.cluster.temp.dir");
             String taskWorkDir = mapTempDir + File.separator + mapTaskId;
-            // String jobWorkDir = conf.get("job.local.dir");
             LOG.info("Appending {} to {}", taskWorkDir, localDataTablePathStr);
             localDataTablePathStr = taskWorkDir + localDataTablePathStr;
         }
         Path localDataTablePath = new Path(localDataTablePathStr);
         LOG.info("Copying hdfs file from {} to local disk at {}.", dataTablePath.toUri(),
                  localDataTablePath.toUri());
-        copyToLocalFile(fs, dataTablePath, localDataTablePath);
+        copyToLocalFile(remoteFS, localFS, dataTablePath, localDataTablePath);
         boolean isCompressed = conf.getBoolean(PropertyConstants.COMPRESSION_ENABLED.txt, false);
         if (isCompressed) {
             decompress(localDataTablePath, context);
@@ -251,18 +235,18 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
         components.add(Component.PRIMARY_INDEX);
         Path localIdxPath = new Path(desc.filenameFor(Component.PRIMARY_INDEX));
         LOG.info("Copying hdfs file from {} to local disk at {}.", indexPathStr, localIdxPath);
-        copyToLocalFile(fs, new Path(indexPathStr), localIdxPath);
+        copyToLocalFile(remoteFS, localFS, new Path(indexPathStr), localIdxPath);
         if (isCompressed) {
             decompress(localIdxPath, context);
         }
         String compressionTablePathStr = hdfsDesc.filenameFor(Component.COMPRESSION_INFO.name());
         Path compressionTablePath = new Path(compressionTablePathStr);
-        if (fs.exists(compressionTablePath)) {
+        if (remoteFS.exists(compressionTablePath)) {
             Path localCompressionPath = new Path(
                     desc.filenameFor(Component.COMPRESSION_INFO.name()));
             LOG.info("Copying hdfs file from {} to local disk at {}.", compressionTablePath.toUri(),
                      localCompressionPath);
-            copyToLocalFile(fs, compressionTablePath, localCompressionPath);
+            copyToLocalFile(remoteFS, localFS, compressionTablePath, localCompressionPath);
             if (isCompressed) {
                 decompress(localCompressionPath, context);
             }
@@ -274,13 +258,13 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
      * Copies a remote path to the local filesystem, while updating hadoop that we're making
      * progress. Doesn't support directories.
      */
-    private void copyToLocalFile(FileSystem remoteFS, Path remote, Path local) throws IOException {
-        FileSystem localFS = FileSystem.getLocal(this.conf);
+    @VisibleForTesting
+    void copyToLocalFile(FileSystem remoteFS, FileSystem localFS, Path remote, Path local)
+            throws IOException {
         // don't support transferring from remote directories
         FileStatus remoteStat = remoteFS.getFileStatus(remote);
-        if (remoteStat.isDirectory()) {
-            throw new RuntimeException("Path " + remote + " is directory!");
-        }
+        Preconditions.checkArgument(!remoteStat.isDirectory(),
+                                    String.format("Path %s is directory!", remote));
         // if local is a dir, copy to inside that dir, like 'cp /path/file /tmp/' would do
         if (localFS.exists(local)) {
             FileStatus localStat = localFS.getFileStatus(local);
@@ -300,7 +284,7 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
             out = localFS.create(local, true);
             int buffSize = this.conf.getInt(CommonConfigurationKeys.IO_FILE_BUFFER_SIZE_KEY,
                                             CommonConfigurationKeys.IO_FILE_BUFFER_SIZE_DEFAULT);
-            byte buf[] = new byte[buffSize];
+            byte[] buf = new byte[buffSize];
             int bytesRead = in.read(buf);
             while (bytesRead >= 0) {
                 long now = System.currentTimeMillis();
@@ -448,5 +432,12 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
      */
     protected void incKeysRead(int val) {
         keysRead += val;
+    }
+
+    /**
+     * @return The number of components copied
+     */
+    protected int getComponentSize() {
+        return components.size();
     }
 }

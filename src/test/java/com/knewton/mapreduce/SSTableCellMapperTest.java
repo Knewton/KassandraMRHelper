@@ -30,7 +30,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Tests the {@link SSTableColumnMapper} through its test implementation the
+ * Tests the {@link SSTableCellMapper} through its test implementation the
  * {@link DoNothingColumnMapper}.
  *
  * @author Giannis Neokleous
@@ -78,6 +78,7 @@ public class SSTableCellMapperTest {
         underTest.getCurrentCell().value().get(verifyByteArr);
         assertEquals(columnValue, new String(verifyByteArr));
         underTest.clearKeyVal();
+        assertEquals(key, underTest.getRowKey());
     }
 
     /**
@@ -89,10 +90,28 @@ public class SSTableCellMapperTest {
         ByteBuffer columnNameBytes = ByteBuffer.wrap(columnNameVal.getBytes());
         CellName cellName = simpleDenseCellType.cellFromByteBuffer(columnNameBytes);
 
+        ByteBuffer key = ByteBuffer.wrap(keyVal.getBytes());
+
         Cell column = new BufferDeletedCell(cellName,
-                                                  ByteBuffer.wrap(columnValue.getBytes()),
-                                                  System.currentTimeMillis() - 100);
-        underTest.map(ByteBuffer.wrap(keyVal.getBytes()), column, null);
+                                            ByteBuffer.wrap(columnValue.getBytes()),
+                                            System.currentTimeMillis() - 100);
+        underTest.map(key, column, null);
+        assertNull(underTest.getCurrentKey());
+        assertNull(underTest.getCurrentCell());
+        underTest.clearKeyVal();
+    }
+
+    /**
+     * Tests to see if null keys are skipped
+     */
+    @Test
+    public void testMapNullKey() throws Exception {
+        ByteBuffer columnNameBytes = ByteBuffer.wrap(columnNameVal.getBytes());
+        CellName cellName = simpleDenseCellType.cellFromByteBuffer(columnNameBytes);
+        Cell column = new BufferDeletedCell(cellName,
+                                            ByteBuffer.wrap(columnValue.getBytes()),
+                                            System.currentTimeMillis() - 100);
+        underTest.map(null, column, null);
         assertNull(underTest.getCurrentKey());
         assertNull(underTest.getCurrentCell());
         underTest.clearKeyVal();
